@@ -59,7 +59,7 @@ let go project argsFile =
 
     Cli
         .Wrap("dotnet")
-        .WithArguments($"build {project} -bl:{binLogFile} --no-incremental")
+        .WithArguments($"build {project} -bl:{binLogFile} --no-incremental -p:BuildProjectReferences=false")
         .ExecuteAsync()
         .Task.Wait()
 
@@ -69,7 +69,7 @@ let go project argsFile =
     printfn $"Args written to: '{argsFile}'"
     // let directory = FileInfo(file).Directory.FullName
     // Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(projectName)}.args.txt")
-printfn $"%+A{fsi.CommandLineArgs}"
+
 match fsi.CommandLineArgs with
 | [|_; project; argsFile|] -> go project argsFile
 | args -> failwith $"Usage: 'script path' projectPath argsFile"

@@ -74,6 +74,22 @@ class Sample
     [string]$Solution
 }
 
+function SetupTest(
+    [Sample]$Sample
+    ){
+    $dir = Checkout-Dir -Spec $f
+    Push-Location -Path $dir
+    try {
+        Checkout -Spec $f
+        if($Sample.PrepareScript){
+            Invoke-Expression $Sample.PrepareScript
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 $f = [CheckoutSpec]@{
     Org = "fsprojects"
     Repo = "fantomas"
@@ -85,24 +101,6 @@ $s = [Sample]@{
     Solution = "fantomas.sln"
 }
 
-function SetupTest(
-    [Sample]$Sample
-    ){
-    $dir = Checkout-Dir -Spec $f
-    Push-Location -Path $dir
-    try {
-        Checkout -Spec $f
-        if($Sample.PrepareScript){
-            Invoke-Expression $Sample.PrepareScript
-        }
-        $projects = dotnet sln $Sample.Solution list
-        echo $projects
-    }
-    finally {
-        Pop-Location
-    }
-}
-
 function Create-ArgsFile($project, $argsFile) {
     & dotnet fsi (Join-Path $PSScriptRoot "args-file.fsx") $project $argsFile
 }
@@ -112,6 +110,20 @@ function Fsc([string]$argsPath){
 }
 
 SetupTest $s
-$p = "C:\projekty\fsharp\.cache\fsprojects__fantomas\18f31541\src\Fantomas.Client\Fantomas.Client.fsproj"
-Create-ArgsFile $p "fsc.args"
-echo $(Get-Item "fsc.args")
+
+$dir = Checkout-Dir -Spec $s.Checkout
+$sln = Join-Path $dir $s.Solution
+$projects = $(dotnet sln $sln list).Skip(2)
+#dotnet build $sln
+#echo $projects
+echo "Length: $($projects.Length)"
+
+foreach($project in $projects){
+    echo $project
+    # echo $project.Length
+    # $p = Join-Path $dir $project
+    # echo $project
+    # echo "project path = $p"
+    # Create-ArgsFile $p "$p.args"
+    # echo "$p.args"
+}
