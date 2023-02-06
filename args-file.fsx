@@ -1,6 +1,6 @@
 #r "nuget: CliWrap, 3.6.0"
 #r "nuget: MSBuild.StructuredLogger, 2.1.746"
-
+#r "nuget: Deedle, 3.0.0"
 open System.IO
 open Microsoft.Build.Logging.StructuredLogger
 open CliWrap
