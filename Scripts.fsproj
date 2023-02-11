@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Utils.fs" />
+        <Compile Include="Git.fs" />
+        <Compile Include="ArgsFile.fs" />
+        <Compile Include="MvidReader.fs" />
+        <Content Include="scripts.ps1" />
+        <None Include="summarise_times.fsx" />
+        <Content Include="fsc.args" />
+        <Content Include="deter.ps1" />
+        <Compile Include="Sample.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CliWrap" Version="3.6.0" />
+      <PackageReference Include="LibGit2Sharp" Version="0.27.0-preview-0182" />
+      <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.768" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+      <PackageReference Include="System.Reflection.Metadata" Version="7.0.0" />
+    </ItemGroup>
+
+</Project>

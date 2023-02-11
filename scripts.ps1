@@ -1,3 +1,7 @@
+# hyperfine:
+# - Windows: https://community.chocolatey.org/packages/hyperfine
+# - Debian: apt? 
+
 $CacheDir = Resolve-Path $env:FSHARP_TESTS_CACHE_DIR
 $ErrorActionPreference = "Stop"
 
@@ -74,6 +78,11 @@ class Sample
     [string]$Solution
 }
 
+class ProjectWithArgs{
+    [string]$ProjectPath
+    [string]$ArgsPath
+}
+
 function SetupTest(
     [Sample]$Sample
     ){
@@ -105,25 +114,45 @@ function Create-ArgsFile($project, $argsFile) {
     & dotnet fsi (Join-Path $PSScriptRoot "args-file.fsx") $project $argsFile
 }
 
-function Fsc([string]$argsPath){
-    dotnet "C:\projekty\fsharp\fsharp_main\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.exe" "@$argsPath" --times
+function Fsc([ProjectWithArgs]$pa){
+    $dir = Split-Path $pa.ProjectPath
+    Push-Location -Path $dir
+    try {
+        dotnet "C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\fsc.dll" "@$($pa.ArgsPath)" --nowarn:0075 --times:times.csv --optimize+
+        AssertSuccessful "fsc"
+    }
+    finally {
+        Pop-Location
+    }
 }
 
-SetupTest $s
+function Go{
+    SetupTest $s
 
-$dir = Checkout-Dir -Spec $s.Checkout
-$sln = Join-Path $dir $s.Solution
-$projects = $(dotnet sln $sln list).Skip(2)
-#dotnet build $sln
-#echo $projects
-echo "Length: $($projects.Length)"
+    $dir = Checkout-Dir -Spec $s.Checkout
+    $sln = Join-Path $dir $s.Solution
+    $projects = dotnet sln $sln list | Select-Object -Skip 2
+    #dotnet build $sln
+    #echo $projects
 
-foreach($project in $projects){
-    echo $project
-    # echo $project.Length
-    # $p = Join-Path $dir $project
-    # echo $project
-    # echo "project path = $p"
-    # Create-ArgsFile $p "$p.args"
-    # echo "$p.args"
+    foreach($project in $projects){
+        $p = Join-Path $dir $project
+        Create-ArgsFile $p "$p.args"
+        echo "'$project' args written to $p.args"
+    }
 }
+
+$pa = [ProjectWithArgs]@{
+    ProjectPath = "C:\projekty\fsharp\.cache\fsprojects__fantomas\18f31541\src\Fantomas\Fantomas.fsproj"
+    ArgsPath = "C:\projekty\fsharp\.cache\fsprojects__fantomas\18f31541\src\Fantomas\Fantomas.fsproj.args"
+}
+
+# Go
+# Fsc $pa
+
+
+function Summarise($csv) {
+    & dotnet fsi (Join-Path $PSScriptRoot "summarise_times.fsx") $csv
+}
+
+Summarise "C:\projekty\fsharp\.cache\fsprojects__fantomas\18f31541\src\Fantomas\times.csv"
