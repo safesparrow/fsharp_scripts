@@ -33,7 +33,7 @@ module FscArgs =
     let parseSingle (arg : string) =
         match Regex.Match(arg, "^--define\:(.+)$") with
         | m when m.Success ->
-            m.Groups[1].Value.ToLower()
+            m.Groups[1].Value
             |> FscArg.Define
         | _ ->
         match Regex.Match(arg, "^--([\d\w_]+)([\+\-])$") with
@@ -50,7 +50,7 @@ module FscArgs =
             path
             |> FscArg.Reference
         | _ ->
-        match Regex.Match(arg, "^(-?-[\d\w_]+)\:.+$") with
+        match Regex.Match(arg, "^(-?-[\d\w_]+)\:(.+)$") with
         | m when m.Success ->
             let flag = m.Groups[1].Value.ToLower()
             let value = m.Groups[2].Value
@@ -64,7 +64,7 @@ module FscArgs =
         | _ ->
         match Regex.Match(arg, "^-?-[^:]+$") with
         | m when m.Success ->
-            let flag = m.Groups[1].Value.ToLower()
+            let flag = m.Groups[0].Value
             flag
             |> OtherOption.Simple
             |> FscArg.OtherOption
@@ -82,7 +82,7 @@ module FscArgs =
                 let vString = if value then "+" else "-" 
                 $"--{name}{vString}"
             | OtherOption.TestFlag name -> $"--test:{name}"
-            | OtherOption.KeyValue(key, value) -> $"--{key}:{value}"
+            | OtherOption.KeyValue(key, value) -> $"{key}:{value}"
             | OtherOption.Simple simpleString -> $"{simpleString}"
         
     let split (argsString : string) : string[] =
