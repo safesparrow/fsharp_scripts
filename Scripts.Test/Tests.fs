@@ -18,8 +18,19 @@ let TestArgs () =
     let args = FscArgs.parse rawArgs
     printfn $"{args.Length} args parsed:"
     printfn $"%+A{args}"
+    
     let stringified = FscArgs.stringifyAll args
     Assert.That(stringified, Is.EquivalentTo rawArgs)
+    
+    let structured = args |> SArgs.structurize
+    printfn $"{structured}"
+    let destructured = structured |> SArgs.destructurize
+    printfn $"{destructured}"
+    Assert.That(destructured, Is.EquivalentTo args)  
+    
+    let modified = structured |> SArgs.clearTestFlag "ParallelCheckingWithSignatureFilesOn"
+    printfn $"{modified}"
+    Assert.That(modified |> SArgs.destructurize |> Array.length, Is.EqualTo (destructured.Length - 1))
 
 [<Test>]
 let TestCheckouts () =
@@ -30,3 +41,8 @@ let TestCheckouts () =
             PrepareScript = PrepareScript.JustBuild
         }
     SamplePreparation.prepare config sample
+
+[<Test>]
+let ProjectsInSolution () =
+    ()
+    Microsoft.Build.Construction.SolutionFile.Parse("")

@@ -33,7 +33,7 @@ type FscArg =
 
 type FscArgs = FscArg[]
 
-type StructuredArgs =
+type SArgs =
     {
         OtherOptions : OtherOption list
         Defines : Define list
@@ -62,9 +62,16 @@ module FscArgs =
             path
             |> FscArg.Reference
         | _ ->
+        match Regex.Match(arg, "^--test:(.+)$") with
+        | m when m.Success ->
+            let name = m.Groups[1].Value
+            name
+            |> OtherOption.TestFlag
+            |> FscArg.OtherOption
+        | _ ->
         match Regex.Match(arg, "^(-?-[\d\w_]+)\:(.+)$") with
         | m when m.Success ->
-            let flag = m.Groups[1].Value.ToLower()
+            let flag = m.Groups[1].Value
             let value = m.Groups[2].Value
             (flag, value)
             |> OtherOption.KeyValue
@@ -109,17 +116,17 @@ module FscArgs =
         args
         |> Array.map stringify
 
-module StructuredArgs =
-    let structurize (args : FscArg seq) : StructuredArgs =
+module SArgs =
+    let structurize (args : FscArg seq) : SArgs =
         let args = args |> Seq.toList
         {
-            StructuredArgs.OtherOptions = args |> List.choose (function | FscArg.OtherOption otherOption -> Some otherOption | _ -> None)
-            StructuredArgs.Defines = args |> List.choose (function | FscArg.Define d -> Some d | _ -> None)
-            StructuredArgs.Refs = args |> List.choose (function | FscArg.Reference ref -> Some ref | _ -> None)
-            StructuredArgs.Inputs = args |> List.choose (function | FscArg.Input input -> Some input | _ -> None)
+            SArgs.OtherOptions = args |> List.choose (function | FscArg.OtherOption otherOption -> Some otherOption | _ -> None)
+            SArgs.Defines = args |> List.choose (function | FscArg.Define d -> Some d | _ -> None)
+            SArgs.Refs = args |> List.choose (function | FscArg.Reference ref -> Some ref | _ -> None)
+            SArgs.Inputs = args |> List.choose (function | FscArg.Input input -> Some input | _ -> None)
         }
     
-    let destructurize (args : StructuredArgs) : FscArgs =
+    let destructurize (args : SArgs) : FscArgs =
         seq {
             yield! (args.OtherOptions |> List.map FscArg.OtherOption)
             yield! (args.Defines |> List.map FscArg.Define)
@@ -128,19 +135,19 @@ module StructuredArgs =
         }
         |> Seq.toArray
     
-    let limitInputsCount (n : int) (args : StructuredArgs) : StructuredArgs =
+    let limitInputsCount (n : int) (args : SArgs) : SArgs =
         {
             args with
                 Inputs = args.Inputs |> List.take (max args.Inputs.Length n)
         }
     
-    let limitInputsToSpecificInput (lastInput : string) (args : StructuredArgs) : StructuredArgs =
+    let limitInputsToSpecificInput (lastInput : string) (args : SArgs) : SArgs =
         {
             args with
                 Inputs = args.Inputs |> List.takeWhile (fun l -> l <> lastInput)
         }
     
-    let setOption (matcher : OtherOption -> bool) (value : OtherOption option) (args : StructuredArgs) : StructuredArgs =
+    let setOption (matcher : OtherOption -> bool) (value : OtherOption option) (args : SArgs) : SArgs =
         let opts = args.OtherOptions
         let opts, found =
             opts
@@ -159,17 +166,23 @@ module StructuredArgs =
                 OtherOptions = opts
         }
     
-    let setBool (name : string) (value : bool) (args : StructuredArgs) : StructuredArgs =
+    let clearOption (matcher : OtherOption -> bool) (args : SArgs) : SArgs =
+        setOption matcher None args
+    
+    let setBool (name : string) (value : bool) (args : SArgs) : SArgs =
         setOption
             (function OtherOption.Bool(s, _) when s = name -> true | _ -> false)
             (OtherOption.Bool(name, value) |> Some)
             args
     
-    let setTestFlag (name : string) (args : StructuredArgs) : StructuredArgs =
+    let setTestFlag (name : string) (enable : bool) (args : SArgs) : SArgs =
         setOption
             (function OtherOption.TestFlag s when s = name -> true | _ -> false)
-            (OtherOption.TestFlag(name) |> Some)
+            (if enable then OtherOption.TestFlag(name) |> Some else None)
             args
+    
+    let clearTestFlag (name : string) (args : SArgs) : SArgs =
+        setTestFlag name false args
 
 /// Create a text file with the F# compiler arguments scrapped from a binary log file.
 /// Run `dotnet build --no-incremental -bl` to create the binlog file.
