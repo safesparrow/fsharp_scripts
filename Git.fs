@@ -54,6 +54,11 @@ type OrgRepo =
     member this.Name = $"{this.Org}/{this.Repo}"
     member this.GitUrl = $"https://github.com/{this.Name}"
     override this.ToString() = this.Name
+    static member Make(org : string, repo : string) =
+        {
+            Org = org
+            Repo = repo
+        }
 
 type CheckoutSpec =
     {
@@ -63,6 +68,11 @@ type CheckoutSpec =
     /// Not fully reliable, but helps avoid long path issues.
     member this.RevisionShort = this.Revision.Substring(0, 8)
     member this.Name = $"{this.OrgRepo.Name}__{this.RevisionShort}"
+    static member Make(org : string, repo : string, rev : string) =
+        {
+            OrgRepo = OrgRepo.Make(org, repo)
+            Revision = rev
+        }
 
 type CheckoutsConfig =
     {

@@ -10,8 +10,9 @@
         <Compile Include="Library.fs" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\Scripts.fsproj" />
+    <ItemGroup><!--      <ProjectReference Include="..\Scripts.fsproj" />-->
+    
+      <ProjectReference Include="..\Scripts.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
