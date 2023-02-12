@@ -4,10 +4,11 @@
         <TargetFramework>net7.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <OutputType>Library</OutputType>
+        <RootNamespace>Scripts.Test</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Library.fs" />
+        <Compile Include="Tests.fs" />
     </ItemGroup>
 
     <ItemGroup><!--      <ProjectReference Include="..\Scripts.fsproj" />-->

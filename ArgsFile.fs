@@ -17,17 +17,29 @@ type OtherOption =
     // Eg. '--times'
     | Simple of string
 
+type Define = string
+type Reference = string
+type Input = string
+
 [<RequireQualifiedAccess>]
 type FscArg =
     // Eg. '--define:DEBUG'
-    | Define of string
+    | Define of Define
     // Eg. '-r:C:\...\System.dll'
-    | Reference of string
+    | Reference of Reference
     // Eg. 'Internals.fs'
-    | Input of string
+    | Input of Input
     | OtherOption of OtherOption
 
 type FscArgs = FscArg[]
+
+type StructuredArgs =
+    {
+        OtherOptions : OtherOption list
+        Defines : Define list
+        Refs : Reference list
+        Inputs : Input list
+    }
 
 module FscArgs =
     let parseSingle (arg : string) =
@@ -89,16 +101,75 @@ module FscArgs =
         argsString.Split("\r\n")
         |> Array.collect (fun s -> s.Split("\n"))
         
-    let parse (args : string) : FscArgs =
+    let parse (args : string[]) : FscArgs =
         args
-        |> split
         |> Array.map parseSingle
     
-    let stringifyAll (args : FscArgs) : string =
+    let stringifyAll (args : FscArgs) : string[] =
         args
         |> Array.map stringify
-        |> String.concat Environment.NewLine
-        
+
+module StructuredArgs =
+    let structurize (args : FscArg seq) : StructuredArgs =
+        let args = args |> Seq.toList
+        {
+            StructuredArgs.OtherOptions = args |> List.choose (function | FscArg.OtherOption otherOption -> Some otherOption | _ -> None)
+            StructuredArgs.Defines = args |> List.choose (function | FscArg.Define d -> Some d | _ -> None)
+            StructuredArgs.Refs = args |> List.choose (function | FscArg.Reference ref -> Some ref | _ -> None)
+            StructuredArgs.Inputs = args |> List.choose (function | FscArg.Input input -> Some input | _ -> None)
+        }
+    
+    let destructurize (args : StructuredArgs) : FscArgs =
+        seq {
+            yield! (args.OtherOptions |> List.map FscArg.OtherOption)
+            yield! (args.Defines |> List.map FscArg.Define)
+            yield! (args.Refs |> List.map FscArg.Reference)
+            yield! (args.Inputs |> List.map FscArg.Input)
+        }
+        |> Seq.toArray
+    
+    let limitInputsCount (n : int) (args : StructuredArgs) : StructuredArgs =
+        {
+            args with
+                Inputs = args.Inputs |> List.take (max args.Inputs.Length n)
+        }
+    
+    let limitInputsToSpecificInput (lastInput : string) (args : StructuredArgs) : StructuredArgs =
+        {
+            args with
+                Inputs = args.Inputs |> List.takeWhile (fun l -> l <> lastInput)
+        }
+    
+    let setOption (matcher : OtherOption -> bool) (value : OtherOption option) (args : StructuredArgs) : StructuredArgs =
+        let opts = args.OtherOptions
+        let opts, found =
+            opts
+            |> List.mapFold (fun (found : bool) opt ->
+                if matcher opt then value, true
+                else Some opt, found
+            ) false
+        let opts = opts |> List.choose id
+        let opts =
+            match found, value with
+            | true, _
+            | false, None -> opts
+            | false, Some value -> value :: opts
+        {
+            args with
+                OtherOptions = opts
+        }
+    
+    let setBool (name : string) (value : bool) (args : StructuredArgs) : StructuredArgs =
+        setOption
+            (function OtherOption.Bool(s, _) when s = name -> true | _ -> false)
+            (OtherOption.Bool(name, value) |> Some)
+            args
+    
+    let setTestFlag (name : string) (args : StructuredArgs) : StructuredArgs =
+        setOption
+            (function OtherOption.TestFlag s when s = name -> true | _ -> false)
+            (OtherOption.TestFlag(name) |> Some)
+            args
 
 /// Create a text file with the F# compiler arguments scrapped from a binary log file.
 /// Run `dotnet build --no-incremental -bl` to create the binlog file.

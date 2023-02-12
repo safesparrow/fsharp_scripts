@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts", "Scripts.fsproj", "{BC970177-9D9C-4D5F-A1E1-36917F2D5F77}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.Test", "Scripts.Test2\Scripts.Test.fsproj", "{BF8A3732-7DA0-4699-875B-151FC52F559D}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.Test", "Scripts.Test\Scripts.Test.fsproj", "{BF8A3732-7DA0-4699-875B-151FC52F559D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
