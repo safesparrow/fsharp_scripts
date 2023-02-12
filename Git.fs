@@ -19,16 +19,29 @@ let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : st
     if Repository.IsValid dir |> not then
         Log.Information $"Checking out revision {revision} in {dir}"
         use repo = clone dir repoUrl
-        Log.Information ("Checkout revision {revision} in {repo.Info.Path}", revision, repo.Info.Path)
+        Log.Information ("Checkout revision {revision} in {path}", revision, repo.Info.Path)
         Commands.Checkout (repo, revision) |> ignore
     else
         use repo = new Repository(dir)
-        let canonicalName = repo.Head.Reference.CanonicalName
-        if canonicalName <> revision then
-            failwith $"Local repository canonical name expected to be '{revision}' but was '{canonicalName}'."
+        let tipSha = repo.Head.Tip.Sha
+        if tipSha <> revision then
+            failwith $"Local repository canonical name expected to be '{revision}' but was '{tipSha}'."
         if repo.RetrieveStatus().IsDirty then
             failwith $"Local repository is dirty - cannot proceed."
         Log.Information $"{revision} already checked out in {dir}"
+
+/// Removes all untracked files and 
+let fullClean (repo : Repository) =
+    repo.Reset(ResetMode.Hard)
+    repo.RemoveUntrackedFiles()
+    let untracked = repo.RetrieveStatus().Untracked
+    untracked
+    |> Seq.iter (fun f ->
+        if Directory.Exists(f.FilePath) then
+            Directory.Delete(f.FilePath)
+        else
+            File.Delete(f.FilePath)
+    )
 
 /// Eg. "dotnet/fsharp"
 type OrgRepo =
@@ -58,7 +71,7 @@ type CheckoutsConfig =
 
 module CheckoutSpec =
     let subdir (spec : CheckoutSpec) =
-        Path.Combine(spec.OrgRepo.Name, spec.RevisionShort)
+        Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort)
     
     let dir (config : CheckoutsConfig) (spec : CheckoutSpec) =
         Path.Combine(config.CacheDir, subdir spec)

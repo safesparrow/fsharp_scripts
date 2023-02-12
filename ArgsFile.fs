@@ -1,5 +1,6 @@
 module Scripts.ArgsFile
 
+open System
 open System.IO
 open System.Text.RegularExpressions
 open Microsoft.Build.Logging.StructuredLogger
@@ -70,6 +71,20 @@ module FscArgs =
         | _ ->
             failwith $"Unable to parser FSC arg '{arg}'"
         
+    let stringify (arg : FscArg) =
+        match arg with
+        | FscArg.Define name -> $"--define:{name}"
+        | FscArg.Reference path -> $"-r:{path}"
+        | FscArg.Input input -> $"{input}"
+        | FscArg.OtherOption optionString ->
+            match optionString with
+            | OtherOption.Bool(name, value) ->
+                let vString = if value then "+" else "-" 
+                $"--{name}{vString}"
+            | OtherOption.TestFlag name -> $"--test:{name}"
+            | OtherOption.KeyValue(key, value) -> $"--{key}:{value}"
+            | OtherOption.Simple simpleString -> $"{simpleString}"
+        
     let split (argsString : string) : string[] =
         argsString.Split("\r\n")
         |> Array.collect (fun s -> s.Split("\n"))
@@ -78,6 +93,11 @@ module FscArgs =
         args
         |> split
         |> Array.map parseSingle
+    
+    let stringifyAll (args : FscArgs) : string =
+        args
+        |> Array.map stringify
+        |> String.concat Environment.NewLine
         
 
 /// Create a text file with the F# compiler arguments scrapped from a binary log file.
