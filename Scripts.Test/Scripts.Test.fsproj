@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <Compile Include="Tests.fs" />
+        <Content Include="fantomas.args" />
     </ItemGroup>
 
     <ItemGroup><!--      <ProjectReference Include="..\Scripts.fsproj" />-->

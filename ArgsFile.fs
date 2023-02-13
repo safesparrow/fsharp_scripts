@@ -2,6 +2,7 @@ module Scripts.ArgsFile
 
 open System
 open System.IO
+open System.Text
 open System.Text.RegularExpressions
 open Microsoft.Build.Logging.StructuredLogger
 open CliWrap
@@ -40,6 +41,13 @@ type SArgs =
         Refs : Reference list
         Inputs : Input list
     }
+    with member this.Output =
+        this.OtherOptions
+        |> List.choose (function
+            | OtherOption.KeyValue("-o", output) -> Some output
+            | _ -> None
+        )
+        |> List.exactlyOne
 
 module FscArgs =
     let parseSingle (arg : string) =
@@ -135,6 +143,17 @@ module SArgs =
         }
         |> Seq.toArray
     
+    let ofFile (argsFile : string) =
+        File.ReadAllLines(argsFile)
+        |> FscArgs.parse
+        |> structurize
+    
+    let toFile (argsFile : string) (args : SArgs) =
+        args
+        |> destructurize
+        |> FscArgs.stringifyAll
+        |> fun args -> File.WriteAllLines(argsFile, args)
+    
     let limitInputsCount (n : int) (args : SArgs) : SArgs =
         {
             args with
@@ -169,6 +188,12 @@ module SArgs =
     let clearOption (matcher : OtherOption -> bool) (args : SArgs) : SArgs =
         setOption matcher None args
     
+    let setOutput (output : string) (args : SArgs) : SArgs =
+        setOption
+            (function OtherOption.KeyValue("-o", _) -> true | _ -> false)
+            (OtherOption.KeyValue("-o", output) |> Some)
+            args
+    
     let setBool (name : string) (value : bool) (args : SArgs) : SArgs =
         setOption
             (function OtherOption.Bool(s, _) when s = name -> true | _ -> false)
@@ -183,6 +208,12 @@ module SArgs =
     
     let clearTestFlag (name : string) (args : SArgs) : SArgs =
         setTestFlag name false args
+        
+    let setKeyValue (name : string) (value : string) (args : SArgs) : SArgs =
+        setOption
+            (function OtherOption.KeyValue(k, v) when k.Equals(name, StringComparison.OrdinalIgnoreCase) -> true | _ -> false)
+            (OtherOption.KeyValue(name, value) |> Some)
+            args
 
 /// Create a text file with the F# compiler arguments scrapped from a binary log file.
 /// Run `dotnet build --no-incremental -bl` to create the binlog file.
@@ -226,6 +257,21 @@ let mkCompilerArgsFromBinLog file =
         | -1 -> failwith "Args text does not look like F# compiler args"
         | idx -> args.Substring(idx)
 
+type Command with
+    member this.ExecuteAssertSuccess() =
+        let res =
+            this
+                .WithStandardOutputPipe(PipeTarget.ToFile("stdout.txt"))
+                .WithStandardErrorPipe(PipeTarget.ToFile("stderr.txt"))
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteAsync()
+                .GetAwaiter()
+                .GetResult()
+        if res.ExitCode <> 0 then
+            failwith $"Non-zero exit code for command '{this.TargetFilePath} {this.Arguments}'"
+        else
+            ()
+
 let mkArgsFile projectPath argsFile =
     if not (File.Exists projectPath) then
         failwithf $"%s{projectPath} does not exist"
@@ -239,9 +285,9 @@ let mkArgsFile projectPath argsFile =
 
     Cli
         .Wrap("dotnet")
-        .WithArguments($"build {projectPath} -bl:{binLogFile} --no-incremental -p:BuildProjectReferences=false")
-        .ExecuteAsync()
-        .Task.Wait()
+        .WithWorkingDirectory(Path.GetDirectoryName(projectPath))
+        .WithArguments($"build {projectPath} -bl:{binLogFile} --no-incremental -p:BuildProjectReferences=true")
+        .ExecuteAssertSuccess()
 
     let args = mkCompilerArgsFromBinLog binLogFile
     File.Delete(binLogFile)

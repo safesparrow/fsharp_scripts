@@ -15,6 +15,7 @@
         <Content Include="fsc.args" />
         <Content Include="deter.ps1" />
         <Compile Include="Sample.fs" />
+        <Content Include="nojaf.ps1" />
     </ItemGroup>
 
     <ItemGroup>
