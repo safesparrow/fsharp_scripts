@@ -34,7 +34,11 @@ let TestArgs () =
     printfn $"{modified}"
     Assert.That(modified |> SArgs.destructurize |> Array.length, Is.EqualTo (destructured.Length - 1))
 
-
+type ProjectSArgs =
+    {
+        Project : string // fsproj path
+        Args : SArgs
+    }
 
 [<Test>]
 let TestCheckouts () =
@@ -50,19 +54,14 @@ let TestCheckouts () =
     let projFile = Path.Combine(baseDir, "src/Fantomas/Fantomas.fsproj")
     mkArgsFile projFile (Path.Combine(__SOURCE_DIRECTORY__, "fantomas.args"))
 
-[<Test>]
-let TestFindNondeterministicFile () =
-    // We have FSC args that we know produce non-deterministic results.
-    let path = Path.Combine(__SOURCE_DIRECTORY__, "fantomas.args")
-    let args = SArgs.ofFile path
-    printfn $"%+A{args}"
-    
-    let dir = "test_output"
-    Directory.CreateDirectory(dir) |> ignore
-    let subPath name = Path.Combine(Environment.CurrentDirectory, Path.Combine(dir, name))
+let go (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) =
+    Directory.CreateDirectory(outputDir) |> ignore
+    let subPath name = Path.Combine(Environment.CurrentDirectory, Path.Combine(outputDir, name))
+    let dllPath = subPath "test.dll"
+    let {Project = project; Args = args} = projectArgs
     let args =
         args
-        |> SArgs.setOutput (subPath "test.dll")
+        |> SArgs.setOutput dllPath
         |> SArgs.setKeyValue "--refout" (subPath "test.ref.dll")
         |> SArgs.setKeyValue "--debug" "portable"
     
@@ -70,11 +69,30 @@ let TestFindNondeterministicFile () =
     args
     |> SArgs.toFile argsFile
     
-    let fsc = @"C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
     CliWrap.Cli
         .Wrap("dotnet")
-        .WithWorkingDirectory(@"c:\projekty\fsharp\fsharp_scripts\.cache\fsprojects__fantomas\18f31541\src\Fantomas")
-        .WithArguments($"{fsc} @{argsFile}")
+        .WithWorkingDirectory(Path.GetDirectoryName(project))
+        .WithArguments($"{fscDll} @{argsFile}")
         .ExecuteAssertSuccess()
     
+    let mvid = MvidReader.getMvid dllPath
+    let mvidPath = subPath "mvid.txt"
+    File.WriteAllText(mvidPath, mvid.ToString())
     
+[<Test>]
+let TestFindNondeterministicFile () =
+    // We have FSC args that we know produce non-deterministic results.
+    let path = Path.Combine(__SOURCE_DIRECTORY__, "fantomas.args")
+    let args = SArgs.ofFile path
+    let project = @"c:\projekty\fsharp\fsharp_scripts\.cache\fsprojects__fantomas\18f31541\src\Fantomas\Fantomas.fsproj"
+    let projectArgs =
+        {
+            Project = project
+            Args = args
+        }
+    printfn $"%+A{args}"
+    let dir = "test_output"
+    let fsc = @"C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
+    
+    go dir projectArgs fsc
+   

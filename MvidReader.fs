@@ -5,7 +5,7 @@ open System.IO
 open System.Reflection.Metadata
 open System.Reflection.PortableExecutable
 
-let getMvid (dll: string): unit =
+let getMvid (dll: string): Guid =
     
     if not (dll.EndsWith(".dll")) then
         failwithf $"Expected %s{dll} to have .dll extension"
@@ -17,4 +17,4 @@ let getMvid (dll: string): unit =
     let sourceReader = embeddedReader.GetMetadataReader()
     let loc = sourceReader.GetModuleDefinition().Mvid
     let mvid = sourceReader.GetGuid(loc)
-    printfn $"%s{mvid.ToString()} at %s{DateTime.Now.ToString()}"
+    mvid
