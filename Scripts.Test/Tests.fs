@@ -5,6 +5,7 @@ open System
 open System.IO
 open System.Security.Cryptography
 open NUnit.Framework
+open Newtonsoft.Json
 open Scripts.Git
 open Scripts.Sample
 open ArgsFile    
@@ -55,14 +56,17 @@ let TestCheckouts () =
     let projFile = Path.Combine(baseDir, "src/Fantomas/Fantomas.fsproj")
     mkArgsFile projFile (Path.Combine(__SOURCE_DIRECTORY__, "fantomas.args"))
 
+[<CLIMutable>]
 type ExtractCore =
     {
         Mvid : string
         DllHash : string
         PdbHash : string
         RefHash : string
+        Project : string
     }
 
+[<CLIMutable>]
 type ExtractMeta =
     {
         DllTimestamp : DateTime
@@ -70,6 +74,7 @@ type ExtractMeta =
         Directory : string
     }
 
+[<CLIMutable>]
 type Extract =
     {
         Core : ExtractCore
@@ -92,7 +97,7 @@ let getFileHash (file : string) =
     let hash = md5.ComputeHash(stream)
     BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant()
 
-let getExtract (name : string) (dir : string) =
+let getExtract (project : string) (name : string) (dir : string) =
     let subPath name = Path.Combine(dir, name)
     let dll = subPath Paths.dll
     {
@@ -102,6 +107,7 @@ let getExtract (name : string) (dir : string) =
                 DllHash = getFileHash dll
                 PdbHash = getFileHash (subPath Paths.pdb)
                 RefHash = getFileHash (subPath Paths.ref)
+                Project = project
             }
         Extract.Meta =
             {
@@ -111,7 +117,7 @@ let getExtract (name : string) (dir : string) =
             }
     }
 
-let go (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) =
+let go (name : string) (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) =
     Directory.CreateDirectory(outputDir) |> ignore
     let subPath name = Path.Combine(Environment.CurrentDirectory, Path.Combine(outputDir, name))
     let dllPath = subPath Paths.dll
@@ -136,11 +142,18 @@ let go (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) =
     let mvidPath = subPath Paths.mvid
     File.WriteAllText(mvidPath, mvid.ToString())
     
+    let extract = getExtract project name outputDir
+    let json = JsonConvert.SerializeObject(extract, Formatting.Indented)
+    File.WriteAllText(subPath Paths.extract, json)
+    extract
+    
 [<Test>]
 let TestFindNondeterministicFile () =
     // We have FSC args that we know produce non-deterministic results.
     let path = Path.Combine(__SOURCE_DIRECTORY__, "fantomas.args")
-    let args = SArgs.ofFile path
+    let args =
+        SArgs.ofFile path
+        |> SArgs.clearTestFlag "GraphBasedChecking"
     let project = @"c:\projekty\fsharp\fsharp_scripts\.cache\fsprojects__fantomas\18f31541\src\Fantomas\Fantomas.fsproj"
     let projectArgs =
         {
@@ -151,5 +164,20 @@ let TestFindNondeterministicFile () =
     let dir = "test_output"
     let fsc = @"C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
     
-    go dir projectArgs fsc
+    let extracts =
+        [|0..1|]
+        |> Array.chunkBySize 2
+        |> Array.collect (fun is ->
+            is
+            |> Array.Parallel.map (fun i -> go $"fantomas_{i}" $"fantomas_{i}" projectArgs fsc)
+        )
+        
+    let distincts =
+        extracts
+        |> Array.distinctBy (fun e -> e.Core)
+    printfn $"%+A{distincts}"
+    match distincts with
+    | [|single|] -> ()
+    | multiple -> Assert.Fail($"{multiple.Length} distincts found")
+    
    

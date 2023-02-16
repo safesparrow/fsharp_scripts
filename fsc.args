@@ -168,7 +168,6 @@
 --nocopyfsharpcore
 --deterministic+
 --simpleresolution
---test:GraphBasedChecking
 --refout:obj\Debug\netstandard2.0\refint\Fantomas.Client.dll
 obj\Debug\netstandard2.0\.NETStandard,Version=v2.0.AssemblyAttributes.fs
 obj\Debug\netstandard2.0\Fantomas.Client.AssemblyInfo.fs

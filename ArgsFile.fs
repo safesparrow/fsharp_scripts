@@ -261,8 +261,8 @@ type Command with
     member this.ExecuteAssertSuccess() =
         let res =
             this
-                .WithStandardOutputPipe(PipeTarget.ToFile("stdout.txt"))
-                .WithStandardErrorPipe(PipeTarget.ToFile("stderr.txt"))
+                // .WithStandardOutputPipe(PipeTarget.ToFile("stdout.txt"))
+                // .WithStandardErrorPipe(PipeTarget.ToFile("stderr.txt"))
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteAsync()
                 .GetAwaiter()
