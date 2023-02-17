@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <PackageReference Include="CliWrap" Version="3.6.0" />
+      <PackageReference Include="ICSharpCode.Decompiler" Version="7.2.1.6856" />
       <PackageReference Include="Ionide.ProjInfo" Version="0.61.1" />
       <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.61.1" />
       <PackageReference Include="Ionide.ProjInfo.Sln" Version="0.61.1" />
