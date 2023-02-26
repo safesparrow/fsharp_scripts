@@ -12,5 +12,6 @@ let getReportWarningsTyparFromJson (path : string) =
 
 [<EntryPoint>]
 let main argv =
+    // TestCheckouts()
     TestFindNondeterministicFile ()
     0

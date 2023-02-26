@@ -65,12 +65,11 @@ module Codebases =
 let TestCheckouts () =
     let sample = fsharp
     let projRelativePath = "src/Compiler/FSharp.Compiler.Service.fsproj"
-    SamplePreparation.prepare config sample
+    // SamplePreparation.prepare config sample
     let baseDir = SamplePreparation.codebaseDir config sample.CodebaseSpec
     let projFile = Path.Combine(baseDir, projRelativePath)
     mkArgsFile projFile (Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args"))
 
-open Newtonsoft.Json.Serialization
 open Newtonsoft.Json.Linq
 
 let getReportWarningsTyparFromJson (path : string) =
@@ -149,10 +148,10 @@ module Extracting =
 
 open Extracting
 
-let go (name : string) (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) =
+let go (name : string) (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) (i : int) =
     printfn $"go {name} {outputDir}"
     let finalDir = outputDir
-    let tmp = "testoutput"
+    let tmp = $"testoutput_{i}"
     let outputDir = tmp
     Directory.CreateDirectory(outputDir) |> ignore
     let subPath name = Path.Combine(Environment.CurrentDirectory, Path.Combine(outputDir, name))
@@ -200,6 +199,10 @@ let rec binSearch (a : int) (b : int) (f : int -> bool) =
 
 [<Test>]
 let TestFindNondeterministicFile () =
+    
+    // SamplePreparation.prepare config fsharp
+    // printfn "Prepared"
+    let dir = SamplePreparation.codebaseDir config fsharp.CodebaseSpec
     // We have FSC args that we know produce non-deterministic results.
     let path = Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args")
     let args =
@@ -215,44 +218,75 @@ let TestFindNondeterministicFile () =
         |> List.toArray
     
     // printfn $"FS indices to bin search: %+A{fsIndices}"
+    let project = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\40916855\src\compiler\FSharp.Compiler.Service.fsproj"
+    let fsc = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\40916855\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
 
     let f (i : int) =
         let idx, file = fsIndices[i]
-        printfn $"[{i}] Compiling up to {idx}, {file}"
+        printfn $"[{i}] Compiling up to file index {idx}, file {file}"
         let args = args |> SArgs.limitInputsCount (idx+1)
 
-        let project = @"c:\jan\fsharp\src\compiler\FSharp.Compiler.Service.fsproj"
         let projectArgs =
             {
                 Project = project
                 Args = args
             }
-        // printfn $"%+A{args}"
         let dir = "test_output"
-        let fsc = @"C:\jan\fsharp\artifacts\bin\fsc\Release\net7.0\fsc.dll"
         
         let extracts =
             [|0..0|]
-            |> Array.map (fun i ->
-                let outDir = $"idx_{idx}/fsc_{i}"
-                let e = go $"fsc_{i}" outDir projectArgs fsc
-                let sigPath = Path.Combine(outDir, Paths.sigData)
-                let typar = getReportWarningsTyparFromJson sigPath
-                e, typar
+            |> Array.chunkBySize 4
+            |> Array.collect (fun items ->
+                items
+                |> Array.Parallel.map (fun i ->
+                    let outDir = $"idx_{idx}/fsc_{i}"
+                    let e = go $"fsc_{i}" outDir projectArgs fsc i
+                    let sigPath = Path.Combine(outDir, Paths.sigData)
+                    let typar = getReportWarningsTyparFromJson sigPath
+                    printfn $"{outDir} [{i}] - typar={typar}"
+                    typar
+                )
             )
-        extracts[0] |> snd
             
-        // let distincts =
-        //     extracts
-        //     |> Array.distinctBy (fun e -> e.Core)
-        // // printfn $"%+A{distincts}"
-        // match distincts with
-        // | [|single|] -> printfn "Deterministic"; true
-        // | multiple -> printfn $"{multiple.Length} distincts found"; false
+        let distincts =
+            extracts
+            |> Array.distinctBy (fun e -> e)
+        printfn $"%+A{distincts}"
+        
+        match distincts with
+        | [|single|] -> printfn $"[{idx} files] Single typar {single}"; single <> Some "b"
+        | multiple -> printfn $"[{idx} files] {multiple.Length} distinct typars found: {multiple}"; false
     
-    for i in 0..5 do
-        printfn $"f 133 = {f 133}"
-        printfn $"f 134 = {f 134}"
+    let trySingle () =
+        let doIdx =
+            fsIndices
+            |> Array.indexed
+            |> Array.find (fun (idx, (i, f)) -> f.EndsWith("ConstraintSolver.fs"))
+            |> snd |> fst
+        let args = args |> SArgs.limitInputsCount (doIdx+1)
+        let projectArgs =
+            {
+                Project = project
+                Args = args
+            }
+        let idx = doIdx
+        let i = 0
+        let outDir = $"idx_{idx}/fsc_{i}"
+        let e = go $"fsc_{i}" outDir projectArgs fsc i
+        let sigPath = Path.Combine(outDir, Paths.sigData)
+        let typar = getReportWarningsTyparFromJson sigPath
+        printfn $"{outDir} [{i}] - typar={typar}"
+    
+    trySingle ()
+    0
+
+    //
+    // let doIdx =
+    //     fsIndices
+    //     |> Array.indexed
+    //     |> Array.find (fun (idx, (i, f)) -> f.EndsWith("DiagnosticOptions.fs"))
+    //     |> fst
+    // binSearch doIdx (fsIndices.Length-1) f
 
     // let searched = binSearch 0 (fsIndices.Length-1) f
     // File.WriteAllText("c:/jan/fsharp_scripts/binsearch.idx", searched.ToString())

@@ -264,6 +264,8 @@ type Command with
                 // .WithStandardOutputPipe(PipeTarget.ToFile("stdout.txt"))
                 // .WithStandardErrorPipe(PipeTarget.ToFile("stderr.txt"))
                 .WithValidation(CommandResultValidation.None)
+                .WithStandardOutputPipe(PipeTarget.ToFile("c:/projekty/fsharp/fsharp_scripts/stdout.txt"))
+                .WithStandardErrorPipe(PipeTarget.ToFile("c:/projekty/fsharp/fsharp_scripts/stderr.txt"))
                 .ExecuteAsync()
                 .GetAwaiter()
                 .GetResult()
