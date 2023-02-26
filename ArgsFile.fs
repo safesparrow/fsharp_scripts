@@ -42,12 +42,12 @@ type SArgs =
         Inputs : Input list
     }
     with member this.Output =
-        this.OtherOptions
-        |> List.choose (function
-            | OtherOption.KeyValue("-o", output) -> Some output
-            | _ -> None
-        )
-        |> List.exactlyOne
+            this.OtherOptions
+            |> List.choose (function
+                | OtherOption.KeyValue("-o", output) -> Some output
+                | _ -> None
+            )
+            |> List.exactlyOne
 
 module FscArgs =
     let parseSingle (arg : string) =
@@ -157,7 +157,7 @@ module SArgs =
     let limitInputsCount (n : int) (args : SArgs) : SArgs =
         {
             args with
-                Inputs = args.Inputs |> List.take (max args.Inputs.Length n)
+                Inputs = args.Inputs |> List.take (min args.Inputs.Length n)
         }
     
     let limitInputsToSpecificInput (lastInput : string) (args : SArgs) : SArgs =
@@ -272,10 +272,11 @@ type Command with
         else
             ()
 
+// TODO Avoid compilation - see what ProjInfo does MSBuild-wise, and either copy or use ProjInfo to extract args.
+// TODO Allow using configurations other than plain 'dotnet build'.
 let mkArgsFile projectPath argsFile =
     if not (File.Exists projectPath) then
         failwithf $"%s{projectPath} does not exist"
-
     if not (projectPath.EndsWith(".fsproj")) then
         failwithf $"%s{projectPath} is not an fsharp project file"
 

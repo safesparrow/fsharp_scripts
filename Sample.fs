@@ -6,10 +6,19 @@ open LibGit2Sharp
 open Scripts.Git
 open Serilog
 
+[<RequireQualifiedAccess>]
 type CodebaseSpec =
     | GitHub of CheckoutSpec
     | Local of string
+    with
+        static member MakeGithub(org : string, repo : string, rev : string) =
+            {
+                OrgRepo = OrgRepo.Make(org, repo)
+                Revision = rev
+            }
+            |> GitHub
 
+[<RequireQualifiedAccess>]
 type PrepareScript =
     | PowerShell of string
     | JustBuild
@@ -23,8 +32,8 @@ type Sample =
 module SamplePreparation =
     let codebaseDir (config : CheckoutsConfig) (codebase : CodebaseSpec) : string =
         match codebase with
-        | GitHub spec -> CheckoutSpec.dir config spec
-        | Local dir -> dir
+        | CodebaseSpec.GitHub spec -> CheckoutSpec.dir config spec
+        | CodebaseSpec.Local dir -> dir
     
     let prepare (config : CheckoutsConfig) (sample : Sample) =
         
