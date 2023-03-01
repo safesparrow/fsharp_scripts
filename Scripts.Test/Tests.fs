@@ -3,21 +3,15 @@ module Scripts.Test
 
 open System
 open System.IO
-open System.Security.Cryptography
 open NUnit.Framework
 open Newtonsoft.Json
 open Scripts.Git
 open Scripts.Sample
-open ArgsFile    
+open ArgsFile
 
 let config =
     {
         CheckoutsConfig.CacheDir =  "c:/projekty/fsharp/fsharp_scripts/.cache"
-    }
-
-type AllConfig =
-    {
-        Dir : string
     }
 
 // [<Test>]
@@ -43,16 +37,18 @@ let TestArgs () =
 
 type ProjectSArgs =
     {
-        Project : string // fsproj path
+        /// fsproj path
+        Project : string
         Args : SArgs
     }
 
 [<AutoOpen>]
-module Codebases =
+module Samples =
     let fantomas =
         {
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "18f31541e983c9301e6a55ba6582817bc704cb6f")
             PrepareScript = PrepareScript.JustBuild
+            // PrepareScript = PrepareScript.PowerShell "echo 'Fantomas'"
         }
     
     let fsharp =
@@ -60,15 +56,25 @@ module Codebases =
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "409168556aed9c6ec8595d1d9525fb5b88888fc4")
             PrepareScript = PrepareScript.PowerShell "./Build.cmd -noVisualStudio"
         }
+    
+    let determinism =
+        {
+            Sample.CodebaseSpec = CodebaseSpec.Local (Path.Combine(__SOURCE_DIRECTORY__, "../DeterminismSample/"))
+            PrepareScript = PrepareScript.JustBuild
+        }
 
 // [<Test>]
-let TestCheckouts () =
-    let sample = fsharp
-    let projRelativePath = "src/Compiler/FSharp.Compiler.Service.fsproj"
-    // SamplePreparation.prepare config sample
+let testMkArgsDeterminism () =
+    let sample = determinism
+    let projRelativePath = "DeterminismSample.fsproj"
+    SamplePreparation.prepare config sample
     let baseDir = SamplePreparation.codebaseDir config sample.CodebaseSpec
     let projFile = Path.Combine(baseDir, projRelativePath)
-    mkArgsFile projFile (Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args"))
+    mkArgsFileProjInfo projFile (Path.Combine(__SOURCE_DIRECTORY__, "determinism_projinfo.args"))
+    
+let TestCheckoutsFantomas () =
+    let sample = fantomas
+    SamplePreparation.prepare config sample
 
 open Newtonsoft.Json.Linq
 
@@ -79,79 +85,12 @@ let getReportWarningsTyparFromJson (path : string) =
     if x = null then None
     else x.Value<string>() |> Some
 
-
-module Extracting =
-
-    [<CLIMutable>]
-    type ExtractCore =
-        {
-            Mvid : string
-            DllHash : string
-            PdbHash : string
-            RefHash : string
-            Project : string
-            SigDataHash : string
-        }
-
-    [<CLIMutable>]
-    type ExtractMeta =
-        {
-            DllTimestamp : DateTime
-            Name : string
-            Directory : string
-        }
-
-    [<CLIMutable>]
-    type Extract =
-        {
-            Core : ExtractCore
-            Meta : ExtractMeta
-        }
-
-    module Paths =
-        let mvid = "mvid.txt"
-        let dll = "out.dll"
-        let pdb = "out.pdb"
-        let ref = "ref.dll"
-        let args = "fscargs.txt"
-        let extract = "extract.json"
-        let sigData : string = "out.signature-data.json"
-
-    let getFileHash (file : string) =
-        if not (File.Exists(file)) then
-            failwith $"File '{file}' does not exist"
-        use md5 = MD5.Create()
-        use stream = File.OpenRead(file)
-        let hash = md5.ComputeHash(stream)
-        BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant()
-
-    let getExtract (project : string) (name : string) (dir : string) =
-        let subPath name = Path.Combine(dir, name)
-        let dll = subPath Paths.dll
-        {
-            Extract.Core =
-                {
-                    ExtractCore.Mvid = File.ReadAllText(subPath Paths.mvid).Trim()
-                    DllHash = getFileHash dll
-                    PdbHash = getFileHash (subPath Paths.pdb)
-                    RefHash = getFileHash (subPath Paths.ref)
-                    Project = project
-                    SigDataHash = getFileHash (subPath Paths.sigData)
-                }
-            Extract.Meta =
-                {
-                    ExtractMeta.Directory = dir
-                    DllTimestamp = File.GetLastWriteTimeUtc(dll)
-                    Name = name
-                }
-        }
-
-open Extracting
+open DeterminismExtracts
 
 let go (name : string) (outputDir : string) (projectArgs : ProjectSArgs) (fscDll : string) (i : int) =
     printfn $"go {name} {outputDir}"
     let finalDir = outputDir
-    let tmp = $"testoutput_{i}"
+    let tmp = $"testoutput"
     let outputDir = tmp
     Directory.CreateDirectory(outputDir) |> ignore
     let subPath name = Path.Combine(Environment.CurrentDirectory, Path.Combine(outputDir, name))
@@ -197,7 +136,50 @@ let rec binSearch (a : int) (b : int) (f : int -> bool) =
         if res then binSearch (m+1) b f
         else binSearch a m f
 
-[<Test>]
+
+
+let TestFindNondeterministicFile2 () =
+    let dir = SamplePreparation.codebaseDir config fsharp.CodebaseSpec
+    let path = Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args")
+    let args =
+        SArgs.ofFile path
+        |> SArgs.setTestFlag "GraphBasedChecking" true
+        |> SArgs.setBool "deterministic" true
+        |> SArgs.setTestFlag "DumpSignatureData" true
+    // let args = { args with SArgs.Inputs = args.Inputs |> List.filter (fun x -> ["A.fsi"; "A.fs"; "Generic1.fsi"; "Generic1.fs"] |> List.contains x) }
+    
+    // let project = Path.Combine(dir, "DeterminismSample.fsproj")
+    let project = Path.Combine(dir, "src/compiler/FSharp.Compiler.Service.fsproj")
+    let fsc = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\40916855\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
+    // let fsc = @"C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
+    let projectArgs =
+        {
+            Project = project
+            Args = args
+        }
+    let dir = "determinismsample_output"    
+    
+    let extracts =
+        [|0..30|]
+        |> Array.chunkBySize 4
+        |> Array.collect (fun items ->
+            items
+            |> Array.map (fun i ->
+                let outDir = $"determinism_{i}"
+                let e = go $"determinism_{i}" outDir projectArgs fsc i
+                let sigPath = Path.Combine(outDir, Paths.sigData)
+                let t = getReportWarningsTyparFromJson sigPath
+                printfn $"{t}"
+                e
+            )
+        )
+        
+    let distincts =
+        extracts
+        |> Array.distinctBy (fun e -> e.Core)
+    printfn $"{distincts.Length} Distinct extracts: %+A{distincts}"
+    
+
 let TestFindNondeterministicFile () =
     
     // SamplePreparation.prepare config fsharp
@@ -207,9 +189,9 @@ let TestFindNondeterministicFile () =
     let path = Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args")
     let args =
         SArgs.ofFile path
-        |> SArgs.setTestFlag "GraphBasedChecking" true
-        // |> SArgs.setBool "deterministic" true
-        |> SArgs.setTestFlag "DumpSignatureData" true
+        //|> SArgs.setTestFlag "GraphBasedChecking" true
+        |> SArgs.setBool "deterministic" true
+        //|> SArgs.setTestFlag "DumpSignatureData" true
     
     let fsIndices = 
         args.Inputs

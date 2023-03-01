@@ -2,10 +2,15 @@ module Scripts.ArgsFile
 
 open System
 open System.IO
+open System.Runtime.CompilerServices
 open System.Text
 open System.Text.RegularExpressions
+open FSharp.Compiler.CodeAnalysis
+open Ionide.ProjInfo
+open Ionide.ProjInfo.Types
 open Microsoft.Build.Logging.StructuredLogger
 open CliWrap
+open Serilog
 
 [<RequireQualifiedAccess>]
 type OtherOption =
@@ -273,30 +278,36 @@ type Command with
             failwith $"Non-zero exit code for command '{this.TargetFilePath} {this.Arguments}'"
         else
             ()
+[<MethodImpl(MethodImplOptions.NoInlining)>]
+let private doLoadOptions (projectPath : string) =
+    let toolsPath = Init.init (DirectoryInfo(Path.GetDirectoryName(projectPath))) None
+    // TODO allow customization of build properties
+    let props = []
+    let loader = WorkspaceLoader.Create (toolsPath, props)
 
-// TODO Avoid compilation - see what ProjInfo does MSBuild-wise, and either copy or use ProjInfo to extract args.
-// TODO Allow using configurations other than plain 'dotnet build'.
-let mkArgsFile projectPath argsFile =
-    if not (File.Exists projectPath) then
-        failwithf $"%s{projectPath} does not exist"
-    if not (projectPath.EndsWith(".fsproj")) then
-        failwithf $"%s{projectPath} is not an fsharp project file"
+    let projects =
+        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo("c:/projekty/fsharp/fsharp_scripts"))) |> Seq.toList
 
-    let binLogFile = $"{Path.GetTempFileName()}.binlog"
-    File.Delete(binLogFile)
-    printfn $"Building '{projectPath}' and creating binlog file: '{binLogFile}'"
-
-    Cli
-        .Wrap("dotnet")
-        .WithWorkingDirectory(Path.GetDirectoryName(projectPath))
-        .WithArguments($"build {projectPath} -bl:{binLogFile} --no-incremental -p:BuildProjectReferences=true")
-        .ExecuteAssertSuccess()
-
-    let args = mkCompilerArgsFromBinLog binLogFile
-    File.Delete(binLogFile)
-    File.WriteAllText(argsFile, args)
-    printfn $"Args written to: '{argsFile}'"
+    match projects with
+    | [project] ->
+        Log.Information("Loaded project options from {projectPath}", projectPath)
+        let fsOptions = FCS.mapToFSharpProjectOptions project []
+        fsOptions
+    | _ ->
+        failwith $"No projects were loaded from {projectPath} - this indicates an error in cracking the projects."
     
-let getArgsPath projectPath =
-    let directory = FileInfo(projectPath).Directory.FullName
-    Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(projectPath)}.args")
+let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
+    let n = Path.GetFileNameWithoutExtension(options.ProjectFileName)
+    seq {
+        yield! options.OtherOptions
+        yield! options.SourceFiles
+    }
+    |> Seq.toArray
+    |> FscArgs.parse
+    |> SArgs.structurize
+
+// TODO Allow using configurations other than plain 'dotnet build'.
+let mkArgsFileProjInfo projectPath argsFile =
+    doLoadOptions projectPath
+    |> convertOptionsToArgs
+    |> SArgs.toFile argsFile

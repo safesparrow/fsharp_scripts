@@ -3,6 +3,7 @@
 open System.IO
 open LibGit2Sharp
 open Serilog
+open Serilog.Context
 
 let private clone (dir : string) (gitUrl : string) : Repository =
     if Directory.Exists dir then
@@ -60,6 +61,11 @@ type OrgRepo =
             Repo = repo
         }
 
+type CheckoutsConfig =
+    {
+        CacheDir : string
+    }
+
 type CheckoutSpec =
     {
         OrgRepo : OrgRepo
@@ -74,19 +80,13 @@ type CheckoutSpec =
             Revision = rev
         }
 
-type CheckoutsConfig =
-    {
-        CacheDir : string
-    }
+let specSubdir (spec : CheckoutSpec) =
+    Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort)
 
-module CheckoutSpec =
-    let subdir (spec : CheckoutSpec) =
-        Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort)
-    
-    let dir (config : CheckoutsConfig) (spec : CheckoutSpec) =
-        Path.Combine(config.CacheDir, subdir spec)
+let specDir (config : CheckoutsConfig) (spec : CheckoutSpec) =
+    Path.Combine(config.CacheDir, specSubdir spec)
 
 let prepareCheckout (config : CheckoutsConfig) (spec : CheckoutSpec) =
-    let dir = CheckoutSpec.dir config spec
+    let dir = specDir config spec
     let repoUrl = spec.OrgRepo.GitUrl
     cloneIfDoesNotExist dir repoUrl spec.Revision

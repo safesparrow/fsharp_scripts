@@ -1,6 +1,5 @@
 open Scripts.Test
 open System.IO
-open Newtonsoft.Json.Serialization
 open Newtonsoft.Json.Linq
 
 let getReportWarningsTyparFromJson (path : string) =
@@ -12,6 +11,9 @@ let getReportWarningsTyparFromJson (path : string) =
 
 [<EntryPoint>]
 let main argv =
+    Scripts.Utils.setupLogging (true)
+    testMkArgsDeterminism()
     // TestCheckouts()
-    TestFindNondeterministicFile ()
+    // TestCheckoutsFantomas()
+    // TestFindNondeterministicFile2 ()
     0
