@@ -264,20 +264,15 @@ let mkCompilerArgsFromBinLog file =
 
 type Command with
     member this.ExecuteAssertSuccess() =
-        let res =
-            this
-                // .WithStandardOutputPipe(PipeTarget.ToFile("stdout.txt"))
-                // .WithStandardErrorPipe(PipeTarget.ToFile("stderr.txt"))
-                .WithValidation(CommandResultValidation.None)
-                .WithStandardOutputPipe(PipeTarget.ToFile("c:/projekty/fsharp/fsharp_scripts/stdout.txt"))
-                .WithStandardErrorPipe(PipeTarget.ToFile("c:/projekty/fsharp/fsharp_scripts/stderr.txt"))
-                .ExecuteAsync()
-                .GetAwaiter()
-                .GetResult()
-        if res.ExitCode <> 0 then
-            failwith $"Non-zero exit code for command '{this.TargetFilePath} {this.Arguments}'"
-        else
-            ()
+        this
+            .WithValidation(CommandResultValidation.ZeroExitCode)
+            .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
+            .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
+            .ExecuteAsync()
+            .GetAwaiter()
+            .GetResult()
+        |> ignore
+            
 [<MethodImpl(MethodImplOptions.NoInlining)>]
 let private doLoadOptions (projectPath : string) =
     let toolsPath = Init.init (DirectoryInfo(Path.GetDirectoryName(projectPath))) None

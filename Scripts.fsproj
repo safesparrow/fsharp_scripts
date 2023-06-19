@@ -12,7 +12,6 @@
         <Compile Include="MvidReader.fs" />
         <Content Include="scripts.ps1" />
         <None Include="summarise_times.fsx" />
-        <Content Include="fsc.args" />
         <Content Include="deter.ps1" />
         <Compile Include="Sample.fs" />
         <Compile Include="DeterminismExtracts.fs" />

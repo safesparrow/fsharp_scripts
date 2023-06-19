@@ -1,5 +1,7 @@
 -o:obj\Debug\net7.0\DeterminismSample.dll
 -g
+--pathmap:C:\projekty\fsharp\fsharp_scripts\Scripts.Test\bin\Debug\net7.0\fcs_determinism_new\determinism_1=c:\out
+--pathmap:C:\projekty\fsharp\fsharp_scripts\Scripts.Test\bin\Debug\net7.0\fcs_determinism_new\determinism_0=c:\out
 --debug:portable
 --noframework
 --define:TRACE

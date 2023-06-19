@@ -4,8 +4,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts", "Scripts.fsproj",
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.Test", "Scripts.Test\Scripts.Test.fsproj", "{BF8A3732-7DA0-4699-875B-151FC52F559D}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DeterminismSample", "DeterminismSample\DeterminismSample.fsproj", "{0B972831-FBA8-4998-9E4C-2143B0BE75A4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,9 +18,5 @@ Global
 		{BF8A3732-7DA0-4699-875B-151FC52F559D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF8A3732-7DA0-4699-875B-151FC52F559D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF8A3732-7DA0-4699-875B-151FC52F559D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0B972831-FBA8-4998-9E4C-2143B0BE75A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0B972831-FBA8-4998-9E4C-2143B0BE75A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0B972831-FBA8-4998-9E4C-2143B0BE75A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0B972831-FBA8-4998-9E4C-2143B0BE75A4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

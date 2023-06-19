@@ -11,11 +11,11 @@
     <Content Include="fantomas.args" />
   </ItemGroup>
   <ItemGroup>
-    <!--      <ProjectReference Include="..\Scripts.fsproj" />-->
     <ProjectReference Include="..\Scripts.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0-preview-20221221-03" /> -->
+    <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
   </ItemGroup>

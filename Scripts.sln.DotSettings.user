@@ -5,6 +5,19 @@
     &lt;TestId&gt;VsTest::BF8A3732-7DA0-4699-875B-151FC52F559D::net7.0::executor://nunit3testexecutor/#Scripts.Test&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/FSharp/FSharpOptions/SkipImplementationAnalysis/@EntryValue">True</s:Boolean>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	

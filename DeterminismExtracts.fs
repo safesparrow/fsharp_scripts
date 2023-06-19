@@ -49,7 +49,7 @@ let getFileHash (file : string) =
         let hash = md5.ComputeHash(stream)
         BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant()
 
-let getExtract (project : string) (name : string) (dir : string) =
+let getExtract (project : string) (extractName : string) (dir : string) =
     let subPath name = Path.Combine(dir, name)
     let dll = subPath Paths.dll
     {
@@ -66,6 +66,6 @@ let getExtract (project : string) (name : string) (dir : string) =
             {
                 ExtractMeta.Directory = dir
                 DllTimestamp = File.GetLastWriteTimeUtc(dll)
-                Name = name
+                Name = extractName
             }
     }
