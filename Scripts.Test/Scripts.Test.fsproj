@@ -10,6 +10,7 @@
     <Compile Include="DeterminismTests.fs" />
     <Compile Include="Program.fs" />
     <Content Include="fantomas.args" />
+    <Content Include="fsc_new.args" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Scripts.fsproj" />
