@@ -19,3 +19,4 @@ let setupLogging (verbose: bool) =
                     LogEventLevel.Information
             )
             .CreateLogger()
+
