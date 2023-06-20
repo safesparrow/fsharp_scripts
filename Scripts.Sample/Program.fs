@@ -1,4 +1,4 @@
-
+﻿
 [<EntryPoint>]
 let main argv =
     // let fscDll = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\40916855\artifacts\bin\fsc\Release\net7.0\fsc.dll"

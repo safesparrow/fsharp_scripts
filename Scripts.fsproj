@@ -6,7 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="More.fs" />
         <Compile Include="Utils.fs" />
         <Compile Include="Git.fs" />
         <Compile Include="ArgsFile.fs" />
@@ -17,15 +16,16 @@
         <Compile Include="Sample.fs" />
         <Compile Include="DeterminismExtracts.fs" />
         <Content Include="nojaf.ps1" />
+        <Compile Include="More.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CliWrap" Version="3.6.0" />
+        <PackageReference Include="CliWrap" Version="3.6.3" />
         <PackageReference Include="ICSharpCode.Decompiler" Version="7.2.1.6856" />
-        <PackageReference Include="Ionide.ProjInfo" Version="0.61.1" />
-        <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.61.1" />
-        <PackageReference Include="Ionide.ProjInfo.Sln" Version="0.61.1" />
-        <PackageReference Include="LibGit2Sharp" Version="0.27.0-preview-0182" />
+        <PackageReference Include="Ionide.ProjInfo" Version="0.61.3" />
+        <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.61.3" />
+        <PackageReference Include="Ionide.ProjInfo.Sln" Version="0.61.3" />
+        <PackageReference Include="LibGit2Sharp" Version="0.27.2" />
         <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.3.2" />
         <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.768" />
         <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />

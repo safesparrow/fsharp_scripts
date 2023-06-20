@@ -16,7 +16,7 @@ let config =
         CheckoutsConfig.CacheDir =  "c:/projekty/fsharp/fsharp_scripts/.cache"
     }
 
-// [<Test>]
+[<Test>]
 let TestArgs () =
     let argsString = File.ReadAllText (Path.Combine(__SOURCE_DIRECTORY__, "fsc_new.args"))
     let rawArgs = FscArgs.split argsString
@@ -33,10 +33,11 @@ let TestArgs () =
     printfn $"{destructured}"
     Assert.That(destructured, Is.EquivalentTo args)  
     
-    let modified = structured |> SArgs.clearTestFlag "ParallelCheckingWithSignatureFilesOn"
+    let modified = structured |> SArgs.clearTestFlag "GraphBasedChecking"
     printfn $"{modified}"
     Assert.That(modified |> SArgs.destructurize |> Array.length, Is.EqualTo (destructured.Length - 1))
 
+[<Test>]
 let TestCheckoutsFantomas () =
     let sample = fantomas
     SamplePreparation.prepare config sample

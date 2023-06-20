@@ -34,6 +34,7 @@
 --keyfile:$NUGET_DIR\packages\microsoft.dotnet.arcade.sdk\8.0.0-beta.22554.2\tools\snk/MSFT.snk
 --publicsign+
 --optimize-
+--test:GraphBasedChecking
 --resource:$REPO_DIR\.cache\dotnet__fsharp\40916855\artifacts\obj\FSharp.Compiler.Service\Debug\netstandard2.0\FSComp.resources
 --resource:$REPO_DIR\.cache\dotnet__fsharp\40916855\artifacts\obj\FSharp.Compiler.Service\Debug\netstandard2.0\FSIstrings.resources
 --resource:$REPO_DIR\.cache\dotnet__fsharp\40916855\artifacts\obj\FSharp.Compiler.Service\Debug\netstandard2.0\UtilsStrings.resources

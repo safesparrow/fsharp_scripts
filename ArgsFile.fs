@@ -90,7 +90,7 @@ module FscArgs =
             |> OtherOption.KeyValue
             |> FscArg.OtherOption
         | _ ->
-        match Regex.Match(arg, "^[\d\w_].+$") with
+        match Regex.Match(arg, "^[$\d\w_].+$") with
         | m when m.Success ->
             FscArg.Input m.Groups[0].Value
         | _ ->
