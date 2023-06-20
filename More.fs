@@ -11,6 +11,7 @@ open Scripts.Sample
 open Newtonsoft.Json.Linq
 open Serilog
 open Scripts.DeterminismExtracts
+open Utils
 
 /// Find the lowest number x in [a, b] for which `f x = true`, or None if it doesn't exist 
 let rec binSearchLowestTrueValue (a : int) (b : int) (f : int -> bool) =

@@ -9,7 +9,6 @@ open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo
 open Ionide.ProjInfo.Types
 open Microsoft.Build.Logging.StructuredLogger
-open CliWrap
 open Serilog
 
 [<RequireQualifiedAccess>]
@@ -262,17 +261,6 @@ let mkCompilerArgsFromBinLog file =
         | -1 -> failwith "Args text does not look like F# compiler args"
         | idx -> args.Substring(idx)
 
-type Command with
-    member this.ExecuteAssertSuccess() =
-        this
-            .WithValidation(CommandResultValidation.ZeroExitCode)
-            .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
-            .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
-            .ExecuteAsync()
-            .GetAwaiter()
-            .GetResult()
-        |> ignore
-            
 [<MethodImpl(MethodImplOptions.NoInlining)>]
 let private doLoadOptions (projectPath : string) =
     let toolsPath = Init.init (DirectoryInfo(Path.GetDirectoryName(projectPath))) None
@@ -281,7 +269,7 @@ let private doLoadOptions (projectPath : string) =
     let loader = WorkspaceLoader.Create (toolsPath, props)
 
     let projects =
-        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo("c:/projekty/fsharp/fsharp_scripts"))) |> Seq.toList
+        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo("c:/projekty/fsharp/fsharp_scripts/.binlogs"))) |> Seq.toList
 
     match projects with
     | [project] ->

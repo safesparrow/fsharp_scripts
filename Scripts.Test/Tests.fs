@@ -11,9 +11,13 @@ open Scripts.Sample
 open ArgsFile
 open Serilog
 
+[<SetUp>]
+let SetUp () =
+    Utils.setupLogging true
+
 let config =
     {
-        CheckoutsConfig.CacheDir =  "c:/projekty/fsharp/fsharp_scripts/.cache"
+        CheckoutsConfig.CacheDir = Path.Combine(Utils.repoDir, ".cache")
     }
 
 [<Test>]

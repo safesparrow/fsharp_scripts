@@ -78,3 +78,4 @@ module SamplePreparation =
             ()
         | PrepareScript.JustBuild ->
             ()
+        dir

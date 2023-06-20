@@ -1,6 +1,10 @@
 ﻿
+open Scripts.Sample
+
 [<EntryPoint>]
 let main argv =
+    Scripts.Utils.setupLogging true
+    BenchmarkAFewProjects.run ()
     // let fscDll = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\40916855\artifacts\bin\fsc\Release\net7.0\fsc.dll"
     //let fscDll = @"C:\projekty\fsharp\nojaf\artifacts\bin\fsc\Release\net7.0\win-x64\publish\fsc.dll"
     // Scripts.Utils.setupLogging (true)

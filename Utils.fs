@@ -2,6 +2,7 @@
 
 open Serilog
 open Serilog.Events
+open CliWrap
 
 let setupLogging (verbose: bool) =
     Log.Logger <-
@@ -20,3 +21,16 @@ let setupLogging (verbose: bool) =
             )
             .CreateLogger()
 
+let repoDir = __SOURCE_DIRECTORY__
+
+type Command with
+    member this.ExecuteAssertSuccess() =
+        this
+            .WithValidation(CommandResultValidation.ZeroExitCode)
+            .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
+            .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
+            .ExecuteAsync()
+            .GetAwaiter()
+            .GetResult()
+        |> ignore
+            

@@ -12,17 +12,13 @@ open ArgsFile
 open Serilog
 open DeterminismExtracts
 
-let config =
-    {
-        CheckoutsConfig.CacheDir =  "c:/projekty/fsharp/fsharp_scripts/.cache"
-    }
+open Scripts.Test
 
 // [<Test>]
 let testMkArgsDeterminism () =
     let sample = determinism
     let projRelativePath = "DeterminismSample.fsproj"
-    SamplePreparation.prepare config sample
-    let baseDir = SamplePreparation.codebaseDir config sample.CodebaseSpec
+    let baseDir = SamplePreparation.prepare config sample
     let projFile = Path.Combine(baseDir, projRelativePath)
     mkArgsFileProjInfo projFile (Path.Combine(__SOURCE_DIRECTORY__, "determinism_projinfo.args"))
     
