@@ -36,11 +36,15 @@ let clean (checkout : CompilerCheckout) =
         .WithArguments($"clean -xdf")
         .ExecuteAssertSuccess()
 
+type RID =
+    | WinX64
+    | LinuxX64
+
 let autoRid =
     if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
-        "win-x64"
+        RID.WinX64
     else
-        "linux-x64"
+        RID.LinuxX64
 
 /// <summary>
 /// These are the env variables that Ionide.ProjInfo seems to set (in-process) - see <a href="https://github.com/ionide/proj-info/blob/963dc87efd2035a6e250f2076878211b43140cbc/src/Ionide.ProjInfo/Library.fs#L251-L257">code</a>.
@@ -67,29 +71,28 @@ type Configuration =
 type PublishOptions =
     {
         Configuration : Configuration
-        Rid : string option
+        Rid : RID option
         ReadyToRun : bool
         TargetFramework : string
+        DotnetPath : string
     }
 
+let dotnetPath =
+    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
+    |> Option.ofObj
+    |> Option.defaultValue "dotnet"
+    
 let defaultPublishOptions =
     {
         Configuration = Configuration.Release
         Rid = None
         ReadyToRun = true
         TargetFramework = "net7.0"
+        DotnetPath = dotnetPath 
     }
-
-type RID =
-    | Net7
 
 let compilerPublishSubPath (configuration : Configuration) (rid : RID) : string =
     Path.Combine("artifacts", "bin", "fsc", configuration.ToString(), rid.ToString(), "publish", "fsc.dll")
-    
-let dotnetPath =
-    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
-    |> Option.ofObj
-    |> Option.defaultValue "dotnet"
     
 let assertArcadeNotUsed (checkout : CompilerCheckout) =
     if File.Exists(checkout.Combine(".dotnet")) then
@@ -102,22 +105,28 @@ let assertArcadeNotUsed (checkout : CompilerCheckout) =
 /// </summary>
 /// <returns>Path to resulting fsc.dll file.</returns>
 let publishCompiler (checkout : CompilerCheckout) (options : PublishOptions option) : string =
-    assertArcadeNotUsed checkout
-    
-    let fscProj = checkout.Combine(fscSubpath)
-    let options = options |> Option.defaultValue defaultPublishOptions
-    let dir = Path.GetDirectoryName(fscProj)
-    
     Log.Information($"Building compiler in '{checkout}'")
     
+    assertArcadeNotUsed checkout
     
-    let dotnetPath = "C:\Users\janus\AppData\Local\Microsoft\dotnet\dotnet.exe"
+    let options = options |> Option.defaultValue defaultPublishOptions
+    let fscProj = checkout.Combine(fscSubpath)
+    let dir = Path.GetDirectoryName(fscProj)
+    let rid = options.Rid |> Option.defaultValue autoRid
+    
     CliWrap.Cli
-        .Wrap(dotnetPath)
+        .Wrap(options.DotnetPath)
         .WithEnvironmentVariables(emptyProjInfoEnvironmentVariables)
         .WithWorkingDirectory(dir)
         .WithArguments($"publish -c {options.Configuration} -r {options.Rid} -p:PublishReadyToRun={options.ReadyToRun} -f {options.TargetFramework} " +
                        "--no-self-contained /p:BUILDING_USING_DOTNET=true /p:AppendRuntimeIdentifierToOutputPath=false")
         .ExecuteAssertSuccess()
+        
+    let fscDll = checkout.Combine(compilerPublishSubPath options.Configuration rid)
+    let f = FileInfo(fscDll)
+    if not (f.Exists) then
+        failwith $"Fsc dll '{fscDll}' does not exist after publish"
+    if (f.LastWriteTime < DateTime.Now.Subtract(TimeSpan.FromMinutes(2))) then
+        failwith $"Expected fsc dll '{fscDll}' to be recently written (in the last two minutes), but it was not - it's likely an issue with the build process"
     
     Path.Combine()

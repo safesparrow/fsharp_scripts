@@ -1,6 +1,7 @@
 ﻿module Scripts.Sample.BenchmarkAFewProjects
 open System.IO
 open Scripts
+open Scripts.Compiler
 open Scripts.Sample
 open Scripts.Git
 
@@ -16,5 +17,8 @@ let run () =
             PrepareScript = PrepareScript.JustBuild
         }
         
-    let dir = SamplePreparation.prepare config fsharp
-    Compiler.publishCompiler dir
+    let checkout =
+        SamplePreparation.prepare config fsharp
+        |> CompilerCheckout
+        
+    publishCompiler checkout

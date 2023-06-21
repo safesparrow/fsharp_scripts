@@ -70,6 +70,8 @@ type CheckoutSpec =
     {
         OrgRepo : OrgRepo
         Revision : string
+        /// Optional suffix used for allowing multiple identical checkouts
+        Suffix : string option
     }
     /// Not fully reliable, but helps avoid long path issues.
     member this.RevisionShort = this.Revision.Substring(0, 8)
@@ -78,10 +80,18 @@ type CheckoutSpec =
         {
             OrgRepo = OrgRepo.Make(org, repo)
             Revision = rev
+            Suffix = None
+        }
+    static member Make(org : string, repo : string, rev : string, suffix : string) =
+        {
+            OrgRepo = OrgRepo.Make(org, repo)
+            Revision = rev
+            Suffix = Some suffix
         }
 
 let specSubdir (spec : CheckoutSpec) =
-    Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort)
+    let suffix = spec.Suffix |> Option.defaultValue "_default"
+    Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort, suffix)
 
 let specDir (config : CheckoutsConfig) (spec : CheckoutSpec) =
     Path.Combine(config.CacheDir, specSubdir spec)
