@@ -25,10 +25,13 @@ let repoDir = __SOURCE_DIRECTORY__
 
 type Command with
     member this.ExecuteAssertSuccess() =
-        this
-            .WithValidation(CommandResultValidation.ZeroExitCode)
-            .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
-            .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
+        let command =
+            this
+                .WithValidation(CommandResultValidation.ZeroExitCode)
+                .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
+                .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
+        Log.Information($"Running '{command.TargetFilePath} {command.Arguments}' in {command.WorkingDirPath}") 
+        command
             .ExecuteAsync()
             .GetAwaiter()
             .GetResult()

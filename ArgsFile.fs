@@ -3,11 +3,9 @@ module Scripts.ArgsFile
 open System
 open System.IO
 open System.Runtime.CompilerServices
-open System.Text
 open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo
-open Ionide.ProjInfo.Types
 open Microsoft.Build.Logging.StructuredLogger
 open Serilog
 
@@ -26,14 +24,16 @@ type Define = string
 type Reference = string
 type Input = string
 
+/// A single typed argument for FSC 
 [<RequireQualifiedAccess>]
 type FscArg =
-    // Eg. '--define:DEBUG'
+    /// Eg. '--define:DEBUG'
     | Define of Define
-    // Eg. '-r:C:\...\System.dll'
+    /// Eg. '-r:C:\...\System.dll'
     | Reference of Reference
-    // Eg. 'Internals.fs'
+    /// Eg. 'Internals.fs'
     | Input of Input
+    /// Eg. '--optimize+'
     | OtherOption of OtherOption
 
 type FscArgs = FscArg[]
@@ -280,7 +280,6 @@ let private doLoadOptions (projectPath : string) =
         failwith $"No projects were loaded from {projectPath} - this indicates an error in cracking the projects."
     
 let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
-    let n = Path.GetFileNameWithoutExtension(options.ProjectFileName)
     seq {
         yield! options.OtherOptions
         yield! options.SourceFiles

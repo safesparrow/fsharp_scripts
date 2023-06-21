@@ -17,4 +17,4 @@ let run () =
         }
         
     let dir = SamplePreparation.prepare config fsharp
-    Compiler.build dir
+    Compiler.publishCompiler dir
