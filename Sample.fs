@@ -11,10 +11,11 @@ type CodebaseSpec =
     | GitHub of CheckoutSpec
     | Local of string
     with
-        static member MakeGithub(org : string, repo : string, rev : string) =
+        static member MakeGithub(org : string, repo : string, rev : string, ?suffix : string) =
             {
                 OrgRepo = OrgRepo.Make(org, repo)
                 Revision = rev
+                Suffix = suffix
             }
             |> GitHub
 

@@ -6,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="BenchmarkAFewProjects.fs" />
+        <Compile Include="CompileAFewProjects.fs" />
         <Compile Include="Program.fs"/>
     </ItemGroup>
 

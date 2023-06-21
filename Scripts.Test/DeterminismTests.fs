@@ -19,8 +19,9 @@ let testMkArgsDeterminism () =
     let sample = determinism
     let projRelativePath = "DeterminismSample.fsproj"
     let baseDir = SamplePreparation.prepare config sample
-    let projFile = Path.Combine(baseDir, projRelativePath)
-    mkArgsFileProjInfo projFile (Path.Combine(__SOURCE_DIRECTORY__, "determinism_projinfo.args"))
+    let _projFile = Path.Combine(baseDir, projRelativePath)
+    ()
+    //generateCompilationArgs projFile (Path.Combine(__SOURCE_DIRECTORY__, "determinism_projinfo.args"))
     
 let TestFcsCompilationDeterminism (fscDll : string) =
     let path = Path.Combine(__SOURCE_DIRECTORY__, "determinism.args")

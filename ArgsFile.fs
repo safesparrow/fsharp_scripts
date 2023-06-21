@@ -53,54 +53,66 @@ type SArgs =
             )
             |> List.exactlyOne
 
+type ArgsFileWithProject =
+    {
+        ArgsFile : string
+        Project : string
+    }
+
 module FscArgs =
-    let parseSingle (arg : string) =
-        match Regex.Match(arg, "^--define\:(.+)$") with
-        | m when m.Success ->
-            m.Groups[1].Value
-            |> FscArg.Define
-        | _ ->
-        match Regex.Match(arg, "^--([\d\w_]+)([\+\-])$") with
-        | m when m.Success ->
-            let flag = m.Groups[1].Value.ToLower()
-            let value = match m.Groups[2].Value with "+" -> true | "-" -> false | _ -> failwith $"Unexpected group value for bool arg: {m}"
-            (flag, value)
-            |> OtherOption.Bool
-            |> FscArg.OtherOption
-        | _ ->
-        match Regex.Match(arg, "^-r:(.+)$") with
-        | m when m.Success ->
-            let path = m.Groups[1].Value
-            path
-            |> FscArg.Reference
-        | _ ->
-        match Regex.Match(arg, "^--test:(.+)$") with
-        | m when m.Success ->
-            let name = m.Groups[1].Value
-            name
-            |> OtherOption.TestFlag
-            |> FscArg.OtherOption
-        | _ ->
-        match Regex.Match(arg, "^(-?-[\d\w_]+)\:(.+)$") with
-        | m when m.Success ->
-            let flag = m.Groups[1].Value
-            let value = m.Groups[2].Value
-            (flag, value)
-            |> OtherOption.KeyValue
-            |> FscArg.OtherOption
-        | _ ->
-        match Regex.Match(arg, "^[$\d\w_].+$") with
-        | m when m.Success ->
-            FscArg.Input m.Groups[0].Value
-        | _ ->
-        match Regex.Match(arg, "^-?-[^:]+$") with
-        | m when m.Success ->
-            let flag = m.Groups[0].Value
-            flag
-            |> OtherOption.Simple
-            |> FscArg.OtherOption
-        | _ ->
-            failwith $"Unable to parser FSC arg '{arg}'"
+    let parseSingle (arg : string) : FscArg option =
+        // Discard comments in response files
+        if arg.StartsWith '#' then
+            None
+        else
+            let arg =
+                match Regex.Match(arg, "^--define\:(.+)$") with
+                | m when m.Success ->
+                    m.Groups[1].Value
+                    |> FscArg.Define
+                | _ ->
+                match Regex.Match(arg, "^--([\d\w_]+)([\+\-])$") with
+                | m when m.Success ->
+                    let flag = m.Groups[1].Value.ToLower()
+                    let value = match m.Groups[2].Value with "+" -> true | "-" -> false | _ -> failwith $"Unexpected group value for bool arg: {m}"
+                    (flag, value)
+                    |> OtherOption.Bool
+                    |> FscArg.OtherOption
+                | _ ->
+                match Regex.Match(arg, "^-r:(.+)$") with
+                | m when m.Success ->
+                    let path = m.Groups[1].Value
+                    path
+                    |> FscArg.Reference
+                | _ ->
+                match Regex.Match(arg, "^--test:(.+)$") with
+                | m when m.Success ->
+                    let name = m.Groups[1].Value
+                    name
+                    |> OtherOption.TestFlag
+                    |> FscArg.OtherOption
+                | _ ->
+                match Regex.Match(arg, "^(-?-[\d\w_]+)\:(.+)$") with
+                | m when m.Success ->
+                    let flag = m.Groups[1].Value
+                    let value = m.Groups[2].Value
+                    (flag, value)
+                    |> OtherOption.KeyValue
+                    |> FscArg.OtherOption
+                | _ ->
+                match Regex.Match(arg, "^[$\d\w_].+$") with
+                | m when m.Success ->
+                    FscArg.Input m.Groups[0].Value
+                | _ ->
+                match Regex.Match(arg, "^-?-[^:]+$") with
+                | m when m.Success ->
+                    let flag = m.Groups[0].Value
+                    flag
+                    |> OtherOption.Simple
+                    |> FscArg.OtherOption
+                | _ ->
+                    failwith $"Unable to parser FSC arg '{arg}'"
+            Some arg
         
     let stringify (arg : FscArg) =
         match arg with
@@ -122,7 +134,7 @@ module FscArgs =
         
     let parse (args : string[]) : FscArgs =
         args
-        |> Array.map parseSingle
+        |> Array.choose parseSingle
     
     let stringifyAll (args : FscArgs) : string[] =
         args
@@ -151,7 +163,7 @@ module SArgs =
         File.ReadAllLines(argsFile)
         |> FscArgs.parse
         |> structurize
-    
+        
     let toFile (argsFile : string) (args : SArgs) =
         args
         |> destructurize
@@ -262,14 +274,12 @@ let mkCompilerArgsFromBinLog file =
         | idx -> args.Substring(idx)
 
 [<MethodImpl(MethodImplOptions.NoInlining)>]
-let private doLoadOptions (projectPath : string) =
+let generateProjectOptions (projectPath : string) (props : (string * string) list) =
     let toolsPath = Init.init (DirectoryInfo(Path.GetDirectoryName(projectPath))) None
-    // TODO allow customization of build properties
-    let props = []
     let loader = WorkspaceLoader.Create (toolsPath, props)
 
     let projects =
-        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo("c:/projekty/fsharp/fsharp_scripts/.binlogs"))) |> Seq.toList
+        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo(Path.Combine(Utils.repoDir, ".binlogs")))) |> Seq.toList
 
     match projects with
     | [project] ->
@@ -289,7 +299,6 @@ let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
     |> SArgs.structurize
 
 // TODO Allow using configurations other than plain 'dotnet build'.
-let mkArgsFileProjInfo projectPath argsFile =
-    doLoadOptions projectPath
+let generateCompilationArgs projectPath props =
+    generateProjectOptions projectPath props
     |> convertOptionsToArgs
-    |> SArgs.toFile argsFile
