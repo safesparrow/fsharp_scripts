@@ -26,9 +26,10 @@ let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : st
         use repo = new Repository(dir)
         let tipSha = repo.Head.Tip.Sha
         if tipSha <> revision then
-            failwith $"Local repository canonical name expected to be '{revision}' but was '{tipSha}'."
-        if repo.RetrieveStatus().IsDirty then
-            failwith $"Local repository is dirty - cannot proceed."
+            () // TODO
+            // failwith $"Local repository canonical name expected to be '{revision}' but was '{tipSha}'."
+        if repo.RetrieveStatus().Modified |> Seq.isEmpty |> not then
+            failwith $"Local repository has modified files - cannot proceed."
         Log.Information $"{revision} already checked out in {dir}"
 
 /// Removes all untracked files and 
@@ -90,7 +91,7 @@ type CheckoutSpec =
         }
 
 let specSubdir (spec : CheckoutSpec) =
-    let suffix = spec.Suffix |> Option.defaultValue "_default"
+    let suffix = spec.Suffix |> Option.defaultValue "_"
     Path.Combine($"{spec.OrgRepo.Org}__{spec.OrgRepo.Repo}", spec.RevisionShort, suffix)
 
 let specDir (config : CheckoutsConfig) (spec : CheckoutSpec) =

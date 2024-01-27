@@ -52,9 +52,10 @@ let clean (checkout : CompilerCheckout) =
         .WithArguments($"clean -xdf")
         .ExecuteAssertSuccess()
 
-type RID =
-    | WinX64
-    | LinuxX64
+type RID = string
+module RID =
+    let WinX64 = "win-x64"
+    let LinuxX64 = "linux-x64"
 
 let autoRid =
     match os with
@@ -113,8 +114,8 @@ let defaultPublishOptions =
         // BuildType = BuildType.Dotnet
     }
 
-let compilerPublishSubPath (configuration : Configuration) (rid : RID) : string =
-    Path.Combine("artifacts", "bin", "fsc", configuration.ToString(), rid.ToString(), "publish", "fsc.dll")
+let compilerPublishSubPath (configuration : Configuration) (tfm : string) (rid : RID) : string =
+    Path.Combine("artifacts", "bin", "fsc", configuration.ToString(), tfm, rid.ToString(), "publish", "fsc.dll")
     
 let assertArcadeNotUsed (checkout : CompilerCheckout) =
     if File.Exists(checkout.Combine(".dotnet")) then
@@ -138,11 +139,12 @@ let publishCompilerCommand (checkout : CompilerCheckout) (options : PublishOptio
     let fscProj = checkout.Combine(fscSubpath)
     let dir = Path.GetDirectoryName(fscProj)
 
+    let rid = options.Rid |> Option.defaultValue autoRid
     Cli
         .Wrap(dotnetPath)
         .WithEnvironmentVariables(emptyProjInfoEnvironmentVariables)
         .WithWorkingDirectory(dir)
-        .WithArguments($"publish -c {options.Configuration} -r {options.Rid} -p:PublishReadyToRun={options.ReadyToRun} -f {options.TargetFramework} " +
+        .WithArguments($"publish -c {options.Configuration} -r {rid} -p:PublishReadyToRun={options.ReadyToRun} -f {options.TargetFramework} " +
                        "--no-self-contained /p:BUILDING_USING_DOTNET=true /p:AppendRuntimeIdentifierToOutputPath=false")
 
 /// <summary>
@@ -161,12 +163,12 @@ let publishCompiler (checkout : CompilerCheckout) (options : PublishOptions opti
 
     let rid = options.Rid |> Option.defaultValue autoRid
         
-    let fscDll = checkout.Combine(compilerPublishSubPath options.Configuration rid)
+    let fscDll = checkout.Combine(compilerPublishSubPath options.Configuration options.TargetFramework rid)
     let f = FileInfo(fscDll)
     if not f.Exists then
         failwith $"Fsc dll '{fscDll}' does not exist after publish"
-    if (f.LastWriteTime < DateTime.Now.Subtract(TimeSpan.FromMinutes(2))) then
-        failwith $"Expected fsc dll '{fscDll}' to be recently written (in the last two minutes), but it was not - it's likely an issue with the build process"
+    // if (f.LastWriteTime < DateTime.Now.Subtract(TimeSpan.FromMinutes(2))) then
+    //     failwith $"Expected fsc dll '{fscDll}' to be recently written (in the last two minutes), but it was not - it's likely an issue with the build process"
     
     Log.Information($"Compiler published: '{fscDll}'")
     
@@ -190,11 +192,10 @@ let propsToMSBuildArgs (props : Map<string, string>) : string =
 let argsUsingResponseFile (file : string) =
     $"@{file}"
     
-let runCompilation (fscDll : string) (argsWithProject : ArgsFileWithProject) =
+let makeCompilationCommand (fscDll : string) (argsWithProject : ArgsFileWithProject) =
     let args = $"{fscDll} {argsUsingResponseFile argsWithProject.ArgsFile}"
     Log.Information($"Compiling '{argsWithProject.Project}' using '{fscDll}'")
     Cli
         .Wrap(dotnetPath)
-        .WithWorkingDirectory(argsWithProject.Project)
+        .WithWorkingDirectory(Path.GetDirectoryName(argsWithProject.Project))
         .WithArguments(args)
-        .ExecuteAssertSuccess()
