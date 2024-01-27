@@ -45,3 +45,11 @@ let TestArgs () =
 let TestCheckoutsFantomas () =
     let sample = fantomas
     SamplePreparation.prepare config sample
+
+
+[<Test>]
+let TestCheckoutsFSharp () =
+    let sample = fsharp_20240127
+    let dir = SamplePreparation.prepare config sample
+    ()
+

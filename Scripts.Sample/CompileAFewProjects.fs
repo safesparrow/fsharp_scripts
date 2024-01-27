@@ -11,50 +11,37 @@ open Serilog
 open Utils
 open ArgsFile
 
-let buildProject (path : string) (binlog : string) (extraArgs : string) =
+let rec buildProjectMinimal (projectPath : string) (binlogOutputPath : string) (extraArgs : string) =
+    if File.Exists(projectPath) = false then
+        failwith $"'{nameof buildProjectMinimal}' expects a project file path, but {projectPath} is not a file or it doesn't exist"
+    let projectFile = Path.GetFileName(projectPath)
     Cli
         .Wrap(dotnetPath)
-        .WithWorkingDirectory(Path.GetDirectoryName(path))
-        .WithArguments($"build --no-incremental /bl:{binlog} {extraArgs}")
+        .WithWorkingDirectory(Path.GetDirectoryName(projectPath))
+        .WithArguments($"build --no-incremental --no-dependencies --no-restore {projectFile} -- /bl:{binlogOutputPath} {extraArgs}")
         .ExecuteAssertSuccess()
 
 let run () =
     let config =
         {
-            CheckoutsConfig.CacheDir = Path.Combine(Utils.repoDir, ".cache")
-        }
-        
-    let fsharp =
-        {
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("safesparrow", "fsharp", "948f8b2f9cea960c4286bf957ef0e3a1c591ed0f")
-            PrepareScript = PrepareScript.JustBuild
+            CheckoutsConfig.CacheDir = Path.Combine(repoDir, ".cache")
         }
         
     let compilerCheckout =
-        SamplePreparation.prepare config fsharp
+        SamplePreparation.prepare config fsharp_20240127
         |> CompilerCheckout
         
     let publishOptions = Some defaultPublishOptions
-        
     let fscDll = publishCompiler compilerCheckout publishOptions
-    //
-    // let sample = fantomas
-    // let sampleDir = SamplePreparation.prepare config sample
-    //
-    // let fantomasCorePath = Path.Combine(sampleDir, "src", "Fantomas.Core", "Fantomas.Core.fsproj")
-    // let binlog = Path.Combine(Environment.CurrentDirectory, "x.binlog")
-    // let respFile = Path.Combine(Environment.CurrentDirectory, "fantomas.core.rsp")
-    
-    
-    let sample = {fsharp with CodebaseSpec = CodebaseSpec.MakeGithub("safesparrow", "fsharp", "948f8b2f9cea960c4286bf957ef0e3a1c591ed0f", "2") }
+    let sample = fsharp_20240127
     let sampleDir = SamplePreparation.prepare config sample
     
-    let projectPath = Path.Combine(sampleDir, "src", "compiler", "FSharp.Compiler.Service.fsproj")
+    let projectPath = Path.Combine(sampleDir, Paths.fcs)
     let binlog = Path.Combine(Environment.CurrentDirectory, "x.binlog")
     let respFile = Path.Combine(Environment.CurrentDirectory, "compile.rsp")
     
     if not (File.Exists respFile) then 
-        buildProject projectPath binlog "/p:BUILDING_USING_DOTNET=true"
+        buildProjectMinimal projectPath binlog "/p:BUILDING_USING_DOTNET=true"
         let args = mkCompilerArgsFromBinLog binlog
         File.WriteAllText(respFile, args)
     Log.Information($"Compilation args stored in {respFile}")

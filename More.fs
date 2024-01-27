@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open CliWrap
 open Ionide.ProjInfo
 open Ionide.ProjInfo.Types
 open Newtonsoft.Json
@@ -48,10 +49,10 @@ module Samples =
             // PrepareScript = PrepareScript.PowerShell "echo 'Fantomas'"
         }
     
-    let fsharp =
+    let fsharp_20240127 =
         {
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "409168556aed9c6ec8595d1d9525fb5b88888fc4")
-            PrepareScript = PrepareScript.PowerShell "./Build.cmd -noVisualStudio"
+            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "9ae94bb9f96f07a416777852537bd0310e4764ab")
+            PrepareScript = PrepareScript.PowerShell "dotnet build FSharp.Compiler.Service.sln /p:BUILDING_USING_DOTNET=true"
         }
     
     let determinism =
@@ -159,3 +160,18 @@ let compileAndExtract
         Directory.Move(outputDir, finalDir)
     
     extract
+
+let dotnetPath =
+    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
+    |> Option.ofObj
+    |> Option.defaultValue "dotnet"
+
+let rec buildProjectMinimal (projectPath : string) (binlogOutputPath : string) (extraArgs : string) =
+    if File.Exists(projectPath) = false then
+        failwith $"'{nameof buildProjectMinimal}' expects a project file path, but {projectPath} is not a file or it doesn't exist"
+    let projectFile = Path.GetFileName(projectPath)
+    Cli
+        .Wrap(dotnetPath)
+        .WithWorkingDirectory(Path.GetDirectoryName(projectPath))
+        .WithArguments($"build --no-incremental --no-dependencies --no-restore {projectFile} -- /bl:{binlogOutputPath} {extraArgs}")
+        .ExecuteAssertSuccess()

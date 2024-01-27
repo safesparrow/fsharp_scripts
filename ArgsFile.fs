@@ -232,8 +232,8 @@ module SArgs =
             args
 
 /// Create a text file with the F# compiler arguments scrapped from a binary log file.
-/// Run `dotnet build --no-incremental -bl` to create the binlog file.
-/// The --no-incremental flag is essential for this scraping code.
+/// Run `dotnet build --no-incremental --no-dependencies --no-restore -bl` to create the binlog file.
+/// The `--no-incremental` flag is essential for this scraping code.
 let mkCompilerArgsFromBinLog file =
     let build = BinaryLog.ReadBuild file
 

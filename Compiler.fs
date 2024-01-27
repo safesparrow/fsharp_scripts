@@ -98,11 +98,6 @@ type PublishOptions =
         DotnetPath : string
         // BuildType : BuildType
     }
-
-let dotnetPath =
-    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
-    |> Option.ofObj
-    |> Option.defaultValue "dotnet"
     
 let defaultPublishOptions =
     {
@@ -110,8 +105,7 @@ let defaultPublishOptions =
         Rid = None
         ReadyToRun = true
         TargetFramework = "net7.0"
-        DotnetPath = dotnetPath
-        // BuildType = BuildType.Dotnet
+        DotnetPath = More.dotnetPath
     }
 
 let compilerPublishSubPath (configuration : Configuration) (tfm : string) (rid : RID) : string =
@@ -121,16 +115,6 @@ let assertArcadeNotUsed (checkout : CompilerCheckout) =
     if File.Exists(checkout.Combine(".dotnet")) then
         failwith ($"Compiler checkout {checkout} has the '.dotnet' directory created which indicates it used Arcade build at some point." +
                   "This script only works with dotnet-based builds. Delete that directory to proceed.")
-//
-// /// Creates a command for building with the build script 
-// let buildScriptCommand (checkout : CompilerCheckout) (c : Configuration) : Command =
-//     let scriptName = match os with | OS.Windows -> "Build.cmd" | OS.Linux -> "build.sh"
-//     let scriptPath = checkout.Combine(scriptName)
-//     Cli
-//         .Wrap(scriptPath)
-//         .WithEnvironmentVariables(emptyProjInfoEnvironmentVariables)
-//         .WithWorkingDirectory(checkout.Path)
-//         .WithArguments($"-c {c} -noVisualStudio")        
 
 let publishCompilerCommand (checkout : CompilerCheckout) (options : PublishOptions) : Command =
     let options = options
@@ -152,9 +136,8 @@ let publishCompilerCommand (checkout : CompilerCheckout) (options : PublishOptio
 /// Depends on regular 'dotnet' and assumes Arcade build was not previously run.
 /// </summary>
 /// <returns>Path to resulting fsc.dll file.</returns>
-/// <remarks></remarks>
 let publishCompiler (checkout : CompilerCheckout) (options : PublishOptions option) : string =
-    Log.Information($"Building compiler in '{checkout}'")
+    Log.Information("Building compiler in '{checkout}'", checkout)
     let options = options |> Option.defaultValue defaultPublishOptions
     assertArcadeNotUsed checkout
 
@@ -199,3 +182,6 @@ let makeCompilationCommand (fscDll : string) (argsWithProject : ArgsFileWithProj
         .Wrap(dotnetPath)
         .WithWorkingDirectory(Path.GetDirectoryName(argsWithProject.Project))
         .WithArguments(args)
+        
+module Paths =
+    let fcs = Path.Combine("src", "compiler", "FSharp.Compiler.Service.fsproj")

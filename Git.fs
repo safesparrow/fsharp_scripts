@@ -3,7 +3,6 @@
 open System.IO
 open LibGit2Sharp
 open Serilog
-open Serilog.Context
 
 let private clone (dir : string) (gitUrl : string) : Repository =
     if Directory.Exists dir then
@@ -18,9 +17,9 @@ let private clone (dir : string) (gitUrl : string) : Repository =
 
 let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : string) =
     if Repository.IsValid dir |> not then
-        Log.Information $"Checking out revision {revision} in {dir}"
+        Log.Information ("Cloning revision {revision} in {dir}", revision, dir)
         use repo = clone dir repoUrl
-        Log.Information ("Checkout revision {revision} in {path}", revision, repo.Info.Path)
+        Log.Information ("Checking out revision {revision} in {path}", revision, repo.Info.Path)
         Commands.Checkout (repo, revision) |> ignore
     else
         use repo = new Repository(dir)
@@ -32,8 +31,14 @@ let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : st
             failwith $"Local repository has modified files - cannot proceed."
         Log.Information $"{revision} already checked out in {dir}"
 
+type CheckoutsConfig =
+    {
+        /// Base directory for storing sample checkouts 
+        CacheDir : string
+    }
+
 /// Removes all untracked files and 
-let fullClean (repo : Repository) =
+let fullClean (config : CheckoutsConfig) (repo : Repository) =
     repo.Reset(ResetMode.Hard)
     repo.RemoveUntrackedFiles()
     let untracked = repo.RetrieveStatus().Untracked
@@ -61,11 +66,6 @@ type OrgRepo =
             Org = org
             Repo = repo
         }
-
-type CheckoutsConfig =
-    {
-        CacheDir : string
-    }
 
 type CheckoutSpec =
     {
