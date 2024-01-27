@@ -10,10 +10,7 @@ open FSharp.Data
 open System.IO
 open CliWrap
 open System
-
-let f () =
-    
-
+sd
 let go (csv : string) =
     let df = Frame.ReadCsv(csv)        
     df
