@@ -105,7 +105,7 @@ let defaultPublishOptions =
         Rid = None
         ReadyToRun = true
         TargetFramework = "net7.0"
-        DotnetPath = More.dotnetPath
+        DotnetPath = Build.dotnetPath
     }
 
 let compilerPublishSubPath (configuration : Configuration) (tfm : string) (rid : RID) : string =
@@ -179,7 +179,7 @@ let makeCompilationCommand (fscDll : string) (argsWithProject : ArgsFileWithProj
     let args = $"{fscDll} {argsUsingResponseFile argsWithProject.ArgsFile}"
     Log.Information($"Compiling '{argsWithProject.Project}' using '{fscDll}'")
     Cli
-        .Wrap(dotnetPath)
+        .Wrap(Build.dotnetPath)
         .WithWorkingDirectory(Path.GetDirectoryName(argsWithProject.Project))
         .WithArguments(args)
         

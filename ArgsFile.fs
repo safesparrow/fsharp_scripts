@@ -6,7 +6,7 @@ open System.Runtime.CompilerServices
 open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo
-open Microsoft.Build.Logging.StructuredLogger
+// open Microsoft.Build.Logging.StructuredLogger
 open Serilog
 
 [<RequireQualifiedAccess>]
@@ -231,63 +231,71 @@ module SArgs =
             (OtherOption.KeyValue(name, value) |> Some)
             args
 
-/// Create a text file with the F# compiler arguments scrapped from a binary log file.
-/// Run `dotnet build --no-incremental --no-dependencies --no-restore -bl` to create the binlog file.
-/// The `--no-incremental` flag is essential for this scraping code.
-let mkCompilerArgsFromBinLog file =
-    let build = BinaryLog.ReadBuild file
-
-    let projectName =
-        build.Children
-        |> Seq.choose (
-            function
-            | :? Project as p -> Some p.Name
-            | _ -> None
-        )
-        |> Seq.distinct
-        |> Seq.exactlyOne
-
-    let message (fscTask: FscTask) =
-        fscTask.Children
-        |> Seq.tryPick (
-            function
-            | :? Message as m when m.Text.Contains "fsc" -> Some m.Text
-            | _ -> None
-        )
-
-    let mutable args = None
-
-    build.VisitAllChildren<Task>(fun task ->
-        match task with
-        | :? FscTask as fscTask ->
-            match fscTask.Parent.Parent with
-            | :? Project as p when p.Name = projectName -> args <- message fscTask
-            | _ -> ()
-        | _ -> ()
-    )
-
-    match args with
-    | None -> failwith "Could not find fsc commandline args in the MSBuild binlog file. Did you build using '--no-incremental'?"
-    | Some args ->
-        match args.IndexOf "-o:" with
-        | -1 -> failwith "Args text does not look like F# compiler args"
-        | idx -> args.Substring(idx)
+// /// Create a text file with the F# compiler arguments scrapped from a binary log file.
+// /// Run `dotnet build --no-incremental --no-dependencies --no-restore -bl` to create the binlog file.
+// /// The `--no-incremental` flag is essential for this scraping code.
+// let mkCompilerArgsFromBinLog (projectName : string option) file =
+//     let build = BinaryLog.ReadBuild file
+//
+//     let projectName =
+//         projectName
+//         |> Option.defaultWith (fun () ->
+//             build.Children
+//             |> Seq.choose (
+//                 function
+//                 | :? Project as p -> Some p.Name
+//                 | _ -> None
+//             )
+//             |> Seq.distinct
+//             |> Seq.exactlyOne
+//         )
+//
+//     let message (fscTask: FscTask) =
+//         fscTask.Children
+//         |> Seq.tryPick (
+//             function
+//             | :? Message as m when m.Text.Contains "fsc" -> Some m.Text
+//             | _ -> None
+//         )
+//
+//     let mutable args = None
+//
+//     build.VisitAllChildren<Task>(fun task ->
+//         match task with
+//         | :? FscTask as fscTask ->
+//             match fscTask.Parent.Parent with
+//             | :? Project as p when p.Name = projectName -> args <- message fscTask
+//             | _ -> ()
+//         | _ -> ()
+//     )
+//
+//     match args with
+//     | None -> failwith "Could not find fsc commandline args in the MSBuild binlog file. Did you build using '--no-incremental'?"
+//     | Some args ->
+//         match args.IndexOf "-o:" with
+//         | -1 -> failwith "Args text does not look like F# compiler args"
+//         | idx -> args.Substring(idx)
 
 [<MethodImpl(MethodImplOptions.NoInlining)>]
 let generateProjectOptions (projectPath : string) (props : (string * string) list) =
+    Log.Information("Start {operation}", "generateProjectOptions")
     let toolsPath = Init.init (DirectoryInfo(Path.GetDirectoryName(projectPath))) None
     let loader = WorkspaceLoader.Create (toolsPath, props)
-
     let projects =
-        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Within (DirectoryInfo(Path.Combine(Utils.repoDir, ".binlogs")))) |> Seq.toList
+        loader.LoadProjects ([projectPath], [], BinaryLogGeneration.Off) |> Seq.toList
 
     match projects with
-    | [project] ->
-        Log.Information("Loaded project options from {projectPath}", projectPath)
-        let fsOptions = FCS.mapToFSharpProjectOptions project []
-        fsOptions
-    | _ ->
+    | [] ->
         failwith $"No projects were loaded from {projectPath} - this indicates an error in cracking the projects."
+    | projects ->
+        let projectsString =
+            projects
+            |> List.map (fun p -> p.ProjectFileName)
+            |> fun ps -> String.Join(Environment.NewLine, ps)
+        Log.Information("Loaded {projectCount} projects and their options from {projectPath}: " + Environment.NewLine + projectsString, projects.Length, projectPath)
+        let fsOptions = FCS.mapManyOptions projects |> Seq.toArray
+        let x = fsOptions[0].ProjectFileName
+        fsOptions
     
 let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
     seq {
@@ -300,5 +308,7 @@ let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
 
 // TODO Allow using configurations other than plain 'dotnet build'.
 let generateCompilationArgs projectPath props =
-    generateProjectOptions projectPath props
+    let projects = generateProjectOptions projectPath props
+    let project = projects |> Array.find (fun p -> p.ProjectFileName = projectPath)
+    project
     |> convertOptionsToArgs

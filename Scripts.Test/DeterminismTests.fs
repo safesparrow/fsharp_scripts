@@ -1,41 +1,25 @@
 ﻿[<NUnit.Framework.TestFixture>]
 module Scripts.DeterminismTests
 
+open System
 open Scripts.More
-
 open System.IO
-open Ionide.ProjInfo
-open NUnit.Framework
-open Scripts.Git
 open Scripts.Sample
 open ArgsFile
 open Serilog
 open DeterminismExtracts
-
 open Scripts.Test
+open Scripts.Build
 
-// [<Test>]
-let testMkArgsDeterminism () =
-    let sample = determinism
-    let projRelativePath = "DeterminismSample.fsproj"
-    let baseDir = SamplePreparation.prepare config sample
-    let _projFile = Path.Combine(baseDir, projRelativePath)
-    ()
-    //generateCompilationArgs projFile (Path.Combine(__SOURCE_DIRECTORY__, "determinism_projinfo.args"))
-    
 let TestFcsCompilationDeterminism (fscDll : string) =
-    let path = Path.Combine(__SOURCE_DIRECTORY__, "determinism.args")
-    let args =
-        SArgs.ofFile path
-        |> SArgs.setTestFlag "GraphBasedChecking" true
-        // This assumes that graph-based TC is not auto-disabled in deterministic builds - requires a modified version of the compiler.
-        |> SArgs.setBool "deterministic" true
-        |> SArgs.setTestFlag "DumpSignatureData" true
-
-    // let dir = SamplePreparation.codebaseDir config fsharp.CodebaseSpec
-    // let project = Path.Combine(dir, "src/compiler/FSharp.Compiler.Service.fsproj")
-    let dir = SamplePreparation.codebaseDir config determinism.CodebaseSpec
-    let project = Path.Combine(dir, "DeterminismSample.fsproj")
+    let spec = fantomas
+    let dir = SamplePreparation.prepare config spec
+    let project = Path.Combine(dir, "src", "Fantomas", "Fantomas.fsproj")
+    
+    let binlogPath = Path.Combine(Environment.CurrentDirectory, "x.binlog")
+    buildProject project (Some binlogPath) ""
+    let args = generateCompilationArgs project []
+    
     let projectArgs =
         {
             Project = project

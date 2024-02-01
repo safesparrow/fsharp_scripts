@@ -2,17 +2,16 @@
 
 open System
 open System.IO
-open CliWrap
 open Ionide.ProjInfo
 open Ionide.ProjInfo.Types
 open Newtonsoft.Json
 open Scripts
 open Scripts.ArgsFile
+open Scripts.DeterminismExtracts
 open Scripts.Sample
+open Scripts.Utils
 open Newtonsoft.Json.Linq
 open Serilog
-open Scripts.DeterminismExtracts
-open Utils
 
 /// Find the lowest number x in [a, b] for which `f x = true`, or None if it doesn't exist 
 let rec binSearchLowestTrueValue (a : int) (b : int) (f : int -> bool) =
@@ -33,32 +32,19 @@ let binSearchArrayIndices<'a> (f : 'a -> bool) (queryItems : 'a[]) =
     binSearchLowestTrueValue 0 (queryItems.Length-1) g
     |> Option.map (fun i -> queryItems[i])
 
-type ProjectWithArgs =
-    {
-        /// fsproj path
-        Project : string
-        Args : SArgs
-    }
-
 [<AutoOpen>]
 module Samples =
     let fantomas =
         {
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "18f31541e983c9301e6a55ba6582817bc704cb6f")
-            PrepareScript = PrepareScript.JustBuild
-            // PrepareScript = PrepareScript.PowerShell "echo 'Fantomas'"
+            // Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "18f31541e983c9301e6a55ba6582817bc704cb6f")
+            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
+            PrepareScript = PrepareScript.PowerShell "dotnet build Fantomas.sln /m"
         }
     
     let fsharp_20240127 =
         {
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "9ae94bb9f96f07a416777852537bd0310e4764ab")
-            PrepareScript = PrepareScript.PowerShell "dotnet build FSharp.Compiler.Service.sln /p:BUILDING_USING_DOTNET=true"
-        }
-    
-    let determinism =
-        {
-            Sample.CodebaseSpec = CodebaseSpec.Local (Path.Combine(__SOURCE_DIRECTORY__, "../DeterminismSample/"))
-            PrepareScript = PrepareScript.JustBuild
+            PrepareScript = PrepareScript.PowerShell "dotnet build FSharp.Compiler.Service.sln /p:BUILDING_USING_DOTNET=true /m"
         }
 
 let getJsonTokenFromFile (path : string) (jpath : string) =
@@ -102,6 +88,14 @@ let binSearchProjectSourceList (args : SArgs) (f : SArgs -> bool) =
     // Create an array of args objects starting from one with shortest possible inputs list to full original args.
     let argsSet = getAllPlausibleArgsWithShortenedSourceListForLibrary args
     binSearchArrayIndices f argsSet
+
+
+type ProjectWithArgs =
+    {
+        /// fsproj path
+        Project : string
+        Args : SArgs
+    }
 
 /// Compile a project and extract information out of it helpful in determinism investigations
 let compileAndExtract
@@ -147,6 +141,7 @@ let compileAndExtract
     File.WriteAllText(mvidPath, mvid.ToString())
     
     let extract = getExtract project name outputDir
+    
     let json = JsonConvert.SerializeObject(extract, Formatting.Indented)
     File.WriteAllText(subPath Paths.extract, json)
     
@@ -160,18 +155,3 @@ let compileAndExtract
         Directory.Move(outputDir, finalDir)
     
     extract
-
-let dotnetPath =
-    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
-    |> Option.ofObj
-    |> Option.defaultValue "dotnet"
-
-let rec buildProjectMinimal (projectPath : string) (binlogOutputPath : string) (extraArgs : string) =
-    if File.Exists(projectPath) = false then
-        failwith $"'{nameof buildProjectMinimal}' expects a project file path, but {projectPath} is not a file or it doesn't exist"
-    let projectFile = Path.GetFileName(projectPath)
-    Cli
-        .Wrap(dotnetPath)
-        .WithWorkingDirectory(Path.GetDirectoryName(projectPath))
-        .WithArguments($"build --no-incremental --no-dependencies --no-restore {projectFile} -- /bl:{binlogOutputPath} {extraArgs}")
-        .ExecuteAssertSuccess()

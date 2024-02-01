@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -11,7 +11,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Scripts.Test\Scripts.Test.fsproj" />
+      <ProjectReference Include="..\Scripts.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
     </ItemGroup>
 
 </Project>

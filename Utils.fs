@@ -1,16 +1,19 @@
 ﻿module Scripts.Utils
 
 open Serilog
+open Serilog.Configuration
 open Serilog.Events
 open CliWrap
+open Serilog.Filters
 
 let setupLogging (verbose: bool) =
     Log.Logger <-
         LoggerConfiguration()
             .Enrich.FromLogContext()
+            .Filter.ByExcluding(Matching.FromSource("MsBuild"))
             .WriteTo
             .Console(
-                outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {step:j}: {Message:lj}{NewLine}{Exception}"
+                outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} {step:j}: {Message:lj}{NewLine}{Exception}"
             )
             .MinimumLevel
             .Is(
@@ -30,7 +33,7 @@ type Command with
                 .WithValidation(CommandResultValidation.ZeroExitCode)
                 .WithStandardErrorPipe(PipeTarget.ToFile "stderr.txt")
                 .WithStandardOutputPipe(PipeTarget.ToFile "stdout.txt")
-        Log.Information($"Running '{command.TargetFilePath} {command.Arguments}' in {command.WorkingDirPath}") 
+        Log.Information("Running '{path} {args}' in {dir}", command.TargetFilePath, command.Arguments, command.WorkingDirPath) 
         command
             .ExecuteAsync()
             .GetAwaiter()

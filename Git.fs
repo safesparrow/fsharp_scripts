@@ -27,8 +27,8 @@ let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : st
         if tipSha <> revision then
             () // TODO
             // failwith $"Local repository canonical name expected to be '{revision}' but was '{tipSha}'."
-        if repo.RetrieveStatus().Modified |> Seq.isEmpty |> not then
-            failwith $"Local repository has modified files - cannot proceed."
+        // if repo.RetrieveStatus().Modified |> Seq.isEmpty |> not then
+        //     failwith $"Local repository has modified files - cannot proceed."
         Log.Information $"{revision} already checked out in {dir}"
 
 type CheckoutsConfig =

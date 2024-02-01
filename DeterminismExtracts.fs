@@ -3,6 +3,10 @@
 open System
 open System.IO
 open System.Security.Cryptography
+open Newtonsoft.Json
+open Scripts.ArgsFile
+open Serilog
+open Scripts.Utils
 
 [<CLIMutable>]
 type ExtractCore =
@@ -69,3 +73,71 @@ let getExtract (project : string) (extractName : string) (dir : string) =
                 Name = extractName
             }
     }
+    
+
+type ProjectWithArgs =
+    {
+        /// fsproj path
+        Project : string
+        Args : SArgs
+    }
+
+/// Compile a project and extract information out of it helpful in determinism investigations
+let compileAndExtract
+    (useTmpDir : bool)
+    (name : string)
+    (baseDir : string)
+    (projectArgs : ProjectWithArgs)
+    (fscDll : string)
+    : Extract
+    =
+    let finalDir = Path.Combine(baseDir, name)
+    let outputDir =
+        if useTmpDir then
+            Log.Information("compileAndExtract {finalDir}", finalDir)
+            "testoutput"
+        else
+            finalDir
+    let outputDir = Path.Combine(Environment.CurrentDirectory, outputDir)
+    Directory.CreateDirectory(outputDir) |> ignore
+    let subPath name = Path.Combine(outputDir, name)
+    let {Project = project; Args = args} = projectArgs
+    let workDir = Path.GetDirectoryName(project)
+
+    let dllPath = subPath Paths.dll
+    let args =
+        args
+        |> SArgs.setOutput (Path.GetRelativePath(workDir, subPath Paths.dll))
+        |> SArgs.setKeyValue "--refout" (Path.GetRelativePath(workDir, subPath Paths.ref))
+        |> SArgs.setKeyValue "--debug" "portable"
+    
+    let argsFile = subPath Paths.args
+    args
+    |> SArgs.toFile argsFile
+    
+    CliWrap.Cli
+        .Wrap("dotnet")
+        .WithWorkingDirectory(workDir)
+        .WithArguments($"{fscDll} @{argsFile}")
+        .ExecuteAssertSuccess()
+    
+    let mvid = MvidReader.getMvid dllPath
+    let mvidPath = subPath Paths.mvid
+    File.WriteAllText(mvidPath, mvid.ToString())
+    
+    let extract = getExtract project name outputDir
+    
+    let json = JsonConvert.SerializeObject(extract, Formatting.Indented)
+    File.WriteAllText(subPath Paths.extract, json)
+    
+    if useTmpDir then
+        if Directory.Exists finalDir then
+            failwith $"Output directory {finalDir} exists."
+            
+        // Make sure parent directory exists
+        Directory.CreateDirectory(finalDir) |> ignore
+        Directory.Delete(finalDir)
+        Directory.Move(outputDir, finalDir)
+    
+    extract
+
