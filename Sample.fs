@@ -70,11 +70,11 @@ module SamplePreparation =
             | CodebaseSpec.GitHub spec ->
                 let markerPath = preparationMarkerPath config spec
                 if File.Exists(markerPath) then
-                    Log.Information $"Skipping preparation script as preparation marker file exists: {markerPath}"
+                    Log.Information("Skipping preparation script as preparation marker file exists: {markerPath}", markerPath)
                 else
                     prepare dir script
                     File.WriteAllText(markerPath, DateTime.Now.ToString("o"))
-                    Log.Information $"Preparation finished. Marker file created: {markerPath}"
+                    Log.Information("Preparation finished. Marker file created: {markerPath}", markerPath)
                 ()
             ()
         | PrepareScript.JustBuild ->

@@ -29,7 +29,7 @@ let private cloneIfDoesNotExist (dir : string) (repoUrl : string) (revision : st
             // failwith $"Local repository canonical name expected to be '{revision}' but was '{tipSha}'."
         // if repo.RetrieveStatus().Modified |> Seq.isEmpty |> not then
         //     failwith $"Local repository has modified files - cannot proceed."
-        Log.Information $"{revision} already checked out in {dir}"
+        Log.Information("{revision} already checked out in {dir}", revision, dir)
 
 type CheckoutsConfig =
     {
