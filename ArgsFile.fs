@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Reflection
 open System.Runtime.CompilerServices
+open System.Runtime.Loader
 open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo
@@ -307,17 +308,11 @@ let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
     |> FscArgs.parse
     |> SArgs.structurize
 
-let foo projectPath props =
+// TODO Allow using configurations other than plain 'dotnet build'.
+let generateCompilationArgs projectPath props =
     let projects = generateProjectOptions projectPath props
-    let x = FSharp.Compiler.CodeAnalysis.FSharpChecker.Create()
+    let x = FSharpChecker.Create()
     let r = x.ParseAndCheckProject(projects[0]) |> Async.StartAsTask |> fun x -> x.Result
     let project = projects |> Array.find (fun p -> p.ProjectFileName = projectPath)
     project
     |> convertOptionsToArgs
-
-// TODO Allow using configurations other than plain 'dotnet build'.
-let generateCompilationArgs projectPath props =
-    let path = @"C:\projekty\fsharp\fsharp_scripts\.cache\dotnet__fsharp\9ae94bb9\_\artifacts\obj\FSharp.Compiler.Service\Debug\netstandard2.0\FSharp.Compiler.Service.dll"
-    let h a b = AppDomain.CurrentDomain.Load(path)
-    AppDomain.CurrentDomain.add_AssemblyResolve(h)
-    foo projectPath props
