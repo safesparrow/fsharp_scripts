@@ -21,7 +21,7 @@
 
     <ItemGroup>
         <PackageReference Include="CliWrap" Version="3.6.6" />
-        <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24080.5" />
+        <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24101.1" />
         <PackageReference Include="ICSharpCode.Decompiler" Version="8.2.0.7535" />
         <PackageReference Include="Ionide.ProjInfo" Version="0.62.0" />
         <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.62.0" />

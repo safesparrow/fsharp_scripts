@@ -38,7 +38,7 @@ module Samples =
         {
             // Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "18f31541e983c9301e6a55ba6582817bc704cb6f")
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
-            PrepareScript = PrepareScript.PowerShell "dotnet build Fantomas.sln /m"
+            PrepareScript = PrepareScript.JustBuild //  PrepareScript.PowerShell "dotnet build Fantomas.sln /m"
         }
     
     let fsharp_20240127 =
