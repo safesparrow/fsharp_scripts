@@ -10,9 +10,7 @@
         <Compile Include="Git.fs" />
         <Compile Include="ArgsFile.fs" />
         <Compile Include="MvidReader.fs" />
-        <Content Include="scripts.ps1" />
         <None Include="summarise_times.fsx" />
-        <Content Include="deter.ps1" />
         <Compile Include="Build.fs" />
         <Compile Include="Sample.fs" />
         <Compile Include="DeterminismExtracts.fs" />
