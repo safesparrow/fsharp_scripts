@@ -2,6 +2,7 @@
 open System.Collections.Immutable
 open System.Diagnostics
 open System.IO
+open System.Runtime.Loader
 open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo.Types
 open OpenTelemetry
@@ -48,9 +49,6 @@ let private subscribeToChecker (checker : FSharpChecker) =
         let name = (if Object.ReferenceEquals(null, op) then "-" else op.ProjectFileName) |> Path.GetFileNameWithoutExtension
         Log.Information("{project} | ProjectChecked", name.PadRight(20))
         ())
-    
-let mapPath (p : string) : string =
-    p
     
 let rec fixFSharpOptionsPaths (x : FSharpProjectOptions[]) =
     let dict = Dictionary<string, FSharpProjectOptions>()
@@ -107,8 +105,10 @@ type IDE(slnPath : string, ?configuration : Configuration) =
                 raw.ProjectFileName, { Project.Raw = raw; Project.FCS = fcs }
             )
             |> Map.ofArray
-        
-        Log.Information("Getting ready")
+    
+    member x.Projects = projects
+    
+    member x.CheckAllProjectsInParallel () =
         projects
         |> Seq.map (fun (KeyValue(n, p)) ->
             async {
@@ -123,8 +123,6 @@ type IDE(slnPath : string, ?configuration : Configuration) =
             for projRes in t.Result do
                 for d in projRes.Diagnostics do
                     Log.Information("Diagnostic | {project} | {filename} | {message}", Path.GetFileName(projRes.ProjectContext.ProjectOptions.ProjectFileName), d.FileName, d.Message)
-    
-    member x.Projects = projects
 
 let setupTelemetry () =
     Sdk
@@ -149,15 +147,7 @@ let testIDE() =
     let slnPath = Path.Combine(dir, "Fantomas.sln")
     let ide = IDE(slnPath)
     ide.LoadProjects()
-
-let crackFantomas () =
-    let spec = fantomas
-    let dir = SamplePreparation.prepare CompileAFewProjects.config spec
-    let project = Path.Combine(dir, "src", "Fantomas", "Fantomas.fsproj")
-    let binlogPath = Path.Combine(Environment.CurrentDirectory, "x.binlog")
-    //buildProject project binlogPath ""
-    let args = generateCompilationArgs project []
-    args |> SArgs.toFile "fantomas.args"
+    ide.CheckAllProjectsInParallel()
 
 let activitySource = ActivitySource("fsc")
 
