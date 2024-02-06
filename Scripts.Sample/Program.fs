@@ -55,6 +55,9 @@ let rec fixFSharpOptionsPaths (x : FSharpProjectOptions[]) =
         match dict.TryGetValue o.ProjectFileName with
         | (true, o) -> o
         | (false, _) ->
+            let refs =
+                FscArguments.references (o.OtherOptions |> Array.toList)
+                |> List.toArray
             let res =
                 {
                     o with
@@ -62,8 +65,16 @@ let rec fixFSharpOptionsPaths (x : FSharpProjectOptions[]) =
                             o.ReferencedProjects
                             |> Array.map (fun rp ->
                                 match rp with
-                                | FSharpReferencedProject.FSharpReference (o, opt) ->
-                                    FSharpReferencedProject.FSharpReference (mapPath o, fix opt)
+                                | FSharpReferencedProject.FSharpReference (rpOutput, opt) ->
+                                    let dllName = Path.GetFileName(rpOutput)
+                                    let matching =
+                                        refs
+                                        |> Array.filter (fun r -> Path.GetFileName(r) = dllName && (Path.GetFileName(Path.GetDirectoryName(r)) = "ref"))
+                                    let final =
+                                        match matching with
+                                        | [|singleMatch|] -> singleMatch
+                                        | _ -> rpOutput
+                                    FSharpReferencedProject.FSharpReference (final, fix opt)
                                 | x -> x
                             )
                 }
@@ -85,7 +96,8 @@ type IDE(slnPath : string, ?configuration : Configuration) =
     
     member x.LoadProjects() =
         let ps = workspaceLoader.LoadSln(slnPath) |> Seq.toArray
-        let fcsProjects = FCS.mapManyOptions ps |> Seq.toArray
+        let fcsProjectsUnfixed = FCS.mapManyOptions ps |> Seq.toArray
+        let fcsProjects = fixFSharpOptionsPaths fcsProjectsUnfixed
         projects <-
             Array.zip ps fcsProjects
             |> Array.map (fun (raw, fcs) ->
