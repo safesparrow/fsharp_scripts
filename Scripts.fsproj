@@ -23,9 +23,9 @@
         <PackageReference Include="CliWrap" Version="3.6.6" />
         <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24101.1" />
         <PackageReference Include="ICSharpCode.Decompiler" Version="8.2.0.7535" />
-        <PackageReference Include="Ionide.ProjInfo" Version="0.62.0" />
-        <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.62.0" />
-        <PackageReference Include="Ionide.ProjInfo.Sln" Version="0.62.0" />
+        <PackageReference Include="Ionide.ProjInfo" Version="0.63.0" />
+        <PackageReference Include="Ionide.ProjInfo.FCS" Version="0.63.0" />
+        <PackageReference Include="Ionide.ProjInfo.Sln" Version="0.63.0" />
         <PackageReference Include="LibGit2Sharp" Version="0.29.0" />
         <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
 <!--        <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.169" />-->

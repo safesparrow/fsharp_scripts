@@ -50,39 +50,6 @@ let private subscribeToChecker (checker : FSharpChecker) =
         Log.Information("{project} | ProjectChecked", name.PadRight(20))
         ())
     
-let rec fixFSharpOptionsPaths (x : FSharpProjectOptions[]) =
-    let dict = Dictionary<string, FSharpProjectOptions>()
-    let rec fix (o : FSharpProjectOptions) =
-        match dict.TryGetValue o.ProjectFileName with
-        | (true, o) -> o
-        | (false, _) ->
-            let refs =
-                FscArguments.references (o.OtherOptions |> Array.toList)
-                |> List.toArray
-            let res =
-                {
-                    o with
-                        ReferencedProjects =
-                            o.ReferencedProjects
-                            |> Array.map (fun rp ->
-                                match rp with
-                                | FSharpReferencedProject.FSharpReference (rpOutput, opt) ->
-                                    let dllName = Path.GetFileName(rpOutput)
-                                    let matching =
-                                        refs
-                                        |> Array.filter (fun r -> Path.GetFileName(r) = dllName && (Path.GetFileName(Path.GetDirectoryName(r)) = "ref"))
-                                    let final =
-                                        match matching with
-                                        | [|singleMatch|] -> singleMatch
-                                        | _ -> rpOutput
-                                    FSharpReferencedProject.FSharpReference (final, fix opt)
-                                | x -> x
-                            )
-                }
-            dict[o.ProjectFileName] <- res
-            res
-    x |> Array.map fix
-    
 type IDE(slnPath : string, ?configuration : Configuration) =
     let configuration = configuration |> Option.defaultValue Configuration.Debug 
     let slnDir = DirectoryInfo(Path.GetDirectoryName(slnPath))
@@ -97,8 +64,7 @@ type IDE(slnPath : string, ?configuration : Configuration) =
     
     member x.LoadProjects() =
         let ps = workspaceLoader.LoadSln(slnPath) |> Seq.toArray
-        let fcsProjectsUnfixed = FCS.mapManyOptions ps |> Seq.toArray
-        let fcsProjects = fixFSharpOptionsPaths fcsProjectsUnfixed
+        let fcsProjects = FCS.mapManyOptions ps |> Seq.toArray
         projects <-
             Array.zip ps fcsProjects
             |> Array.map (fun (raw, fcs) ->
