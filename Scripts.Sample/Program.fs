@@ -28,21 +28,24 @@ type FSharpProjectOptions
     with member x.ProjectDir = Path.GetDirectoryName(x.ProjectFileName) 
 
 let pathRelativeToProject (op : FSharpProjectOptions) (filename : string) =
-    Path.GetRelativePath(op.ProjectDir, filename)
+    if Object.ReferenceEquals(null, op) then
+        filename
+    else
+        Path.GetRelativePath(op.ProjectDir, filename)
 
 let private subscribeToChecker (checker : FSharpChecker) =
     checker.FileChecked.AddHandler(fun (sender : obj) (filename : string, op : FSharpProjectOptions) ->
-        let name = op.ProjectFileName |> Path.GetFileNameWithoutExtension
+        let name = (if Object.ReferenceEquals(null, op) then "-" else op.ProjectFileName) |> Path.GetFileNameWithoutExtension
         Log.Information("{project} | FileChecked {file}", name.PadRight(20), pathRelativeToProject op filename)
         ())
     
     checker.FileParsed.AddHandler(fun (sender : obj) (filename : string, op : FSharpProjectOptions) ->
-        let name = op.ProjectFileName |> Path.GetFileNameWithoutExtension
+        let name = (if Object.ReferenceEquals(null, op) then "-" else op.ProjectFileName) |> Path.GetFileNameWithoutExtension
         Log.Information("{project} | FileParsed  {file}", name.PadRight(20), pathRelativeToProject op filename)
         ())
 
     checker.ProjectChecked.AddHandler(fun (sender : obj) (op : FSharpProjectOptions) ->
-        let name = op.ProjectFileName |> Path.GetFileNameWithoutExtension
+        let name = (if Object.ReferenceEquals(null, op) then "-" else op.ProjectFileName) |> Path.GetFileNameWithoutExtension
         Log.Information("{project} | ProjectChecked", name.PadRight(20))
         ())
     
@@ -90,7 +93,7 @@ type IDE(slnPath : string, ?configuration : Configuration) =
     let workspaceLoader = WorkspaceLoaderViaProjectGraph.Create(toolsPath, globalProps)
     let mutable projects : Map<string, Project> = Map.empty
     
-    let checker = FSharpChecker.Create()
+    let checker = FSharpChecker.Create(parallelReferenceResolution=true, enablePartialTypeChecking=true, useTransparentCompiler=true)
     do
         subscribeToChecker checker
     
@@ -109,18 +112,17 @@ type IDE(slnPath : string, ?configuration : Configuration) =
         projects
         |> Seq.map (fun (KeyValue(n, p)) ->
             async {
-                if p.Name.Contains("Fantomas.Core.Tests") then
-                    let res = checker.ParseAndCheckProject(p.FCS) |> Async.StartAsTask |> _.Result
-                    for d in res.Diagnostics do
-                        Log.Information("Diagnostic | {filename} | {message}", d.FileName, d.Message)
-                    ()
-                return ()
+                let res = checker.ParseAndCheckProject(p.FCS) |> Async.StartAsTask |> _.Result
+                return res
             }
         )
         |> Seq.toArray
         |> Async.Parallel
         |> Async.StartAsTask
-        |> fun t -> t.Result
+        |> fun t ->
+            for projRes in t.Result do
+                for d in projRes.Diagnostics do
+                    Log.Information("Diagnostic | {project} | {filename} | {message}", Path.GetFileName(projRes.ProjectContext.ProjectOptions.ProjectFileName), d.FileName, d.Message)
     
     member x.Projects = projects
 
