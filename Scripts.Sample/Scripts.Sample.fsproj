@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <Compile Include="CompileAFewProjects.fs" />
+        <Compile Include="DeterminismTests.fs" />
         <Compile Include="Program.fs"/>
     </ItemGroup>
 

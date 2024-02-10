@@ -17,6 +17,7 @@
         <Content Include="nojaf.ps1" />
         <Compile Include="More.fs" />
         <Compile Include="Compiler.fs" />
+        <Compile Include="IDE.fs" />
     </ItemGroup>
 
     <ItemGroup>

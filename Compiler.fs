@@ -2,7 +2,6 @@
 module Scripts.Compiler
 
 open System
-open System.Collections.Generic
 open System.IO
 open System.Runtime.InteropServices
 open CliWrap

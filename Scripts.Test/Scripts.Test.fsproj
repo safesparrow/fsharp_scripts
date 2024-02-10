@@ -6,7 +6,6 @@
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="Tests.fs"/>
-        <Compile Include="DeterminismTests.fs"/>
         <Content Include="fantomas.args"/>
         <Content Include="fsc_new.args"/>
     </ItemGroup>

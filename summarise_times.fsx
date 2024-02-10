@@ -6,10 +6,7 @@
 #load "Deedle.fsx"
 #r "nuget: Microsoft.Data.Analysis, 0.20.1"
 
-open FSharp.Data
-open System.IO
 open CliWrap
-open System
 sd
 let go (csv : string) =
     let df = Frame.ReadCsv(csv)        

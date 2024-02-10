@@ -1,8 +1,6 @@
 ﻿module Scripts.Utils
 
-open FSharp.Compiler.CodeAnalysis
 open Serilog
-open Serilog.Configuration
 open Serilog.Events
 open CliWrap
 open Serilog.Filters

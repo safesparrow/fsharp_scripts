@@ -2,9 +2,7 @@ module Scripts.ArgsFile
 
 open System
 open System.IO
-open System.Reflection
 open System.Runtime.CompilerServices
-open System.Runtime.Loader
 open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis
 open Ionide.ProjInfo
@@ -311,8 +309,6 @@ let convertOptionsToArgs (options : FSharpProjectOptions) : SArgs =
 // TODO Allow using configurations other than plain 'dotnet build'.
 let generateCompilationArgs projectPath props =
     let projects = generateProjectOptions projectPath props
-    let x = FSharpChecker.Create()
-    let r = x.ParseAndCheckProject(projects[0]) |> Async.StartAsTask |> fun x -> x.Result
     let project = projects |> Array.find (fun p -> p.ProjectFileName = projectPath)
     project
     |> convertOptionsToArgs

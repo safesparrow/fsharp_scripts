@@ -4,12 +4,10 @@ module Scripts.Test
 open Scripts.More
 
 open System.IO
-open Ionide.ProjInfo
 open NUnit.Framework
 open Scripts.Git
 open Scripts.Sample
 open ArgsFile
-open Serilog
 
 [<SetUp>]
 let SetUp () =
@@ -26,7 +24,6 @@ let TestArgs () =
     let rawArgs = FscArgs.split argsString
     let args = FscArgs.parse rawArgs
     printfn $"{args.Length} args parsed:"
-    // printfn $"%+A{args}"
     
     let stringified = FscArgs.stringifyAll args
     Assert.That(stringified, Is.EquivalentTo rawArgs)
@@ -40,16 +37,3 @@ let TestArgs () =
     let modified = structured |> SArgs.clearTestFlag "GraphBasedChecking"
     printfn $"{modified}"
     Assert.That(modified |> SArgs.destructurize |> Array.length, Is.EqualTo (destructured.Length - 1))
-
-[<Test>]
-let TestCheckoutsFantomas () =
-    let sample = fantomas
-    SamplePreparation.prepare config sample
-
-
-[<Test>]
-let TestCheckoutsFSharp () =
-    let sample = fsharp_20240127
-    let dir = SamplePreparation.prepare config sample
-    ()
-
