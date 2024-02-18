@@ -16,7 +16,7 @@ let rec restoreProject (projectPath : string) (extraArgs : string) =
     if File.Exists(projectPath) = false then
         failwith $"'{nameof restoreProject}' expects a project file path, but {projectPath} is not a file or it doesn't exist"
     let projectFile = Path.GetFileName(projectPath)
-    Log.Information("Start buildProject {projectPath}", projectPath)
+    Log.Information("Start restoreProject {projectPath}", projectPath)
     Cli
         .Wrap(dotnetPath)
         .WithWorkingDirectory(Path.GetDirectoryName(projectPath))

@@ -26,9 +26,12 @@ type PrepareScript =
 
 type Sample =
     {
+        Name : string
         CodebaseSpec : CodebaseSpec
         PrepareScript : PrepareScript
         MainSolution : string
+        MSBuildProps : Map<string, string>
+        SDKRequirementsDescription : string
     }
 
 type AllConfig =

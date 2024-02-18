@@ -10,12 +10,12 @@ open ArgsFile
 
 let run config =
     let compilerCheckout =
-        SamplePreparation.prepare config fsharp_20240127
+        SamplePreparation.prepare config fcs_20240127
         |> CompilerCheckout
         
     let publishOptions = Some defaultPublishOptions
     let fscDll = publishCompiler compilerCheckout publishOptions
-    let sample = fsharp_20240127
+    let sample = fcs_20240127
     let sampleDir = SamplePreparation.prepare config sample
     
     let projectPath = Path.Combine(sampleDir, Paths.fcs)

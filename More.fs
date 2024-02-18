@@ -36,25 +36,40 @@ let binSearchArrayIndices<'a> (f : 'a -> bool) (queryItems : 'a[]) =
 module Samples =
     let fantomas =
         {
+            Name = "fantomas"
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
             PrepareScript = PrepareScript.Nothing
-            MainSolution = "Fantomas.sln" 
+            MSBuildProps = Map.empty
+            MainSolution = "Fantomas.sln"
+            SDKRequirementsDescription = "" 
         }
         
     let argu =
         {
+            Name = "Argu"
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "argu", "71625aec0b4b826ab2b4178f3ffa05d294d22840")
             PrepareScript = PrepareScript.Nothing
+            MSBuildProps = Map.empty
             MainSolution = "Argu.sln"
+            SDKRequirementsDescription = "6.0.402 with minor upgrades"
         }
     
-    
-    let fsharp_20240127 =
+    let fcs_20240127 =
         {
+            Name = "FCS"
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "9ae94bb9f96f07a416777852537bd0310e4764ab")
-            PrepareScript = PrepareScript.PowerShell "dotnet build FSharp.Compiler.Service.sln /p:BUILDING_USING_DOTNET=true /m"
+            PrepareScript = PrepareScript.Nothing
+            MSBuildProps = Map.empty |> Map.add "BUILDING_USING_DOTNET" "true"
             MainSolution = "FSharp.Compiler.Service.sln"
+            SDKRequirementsDescription = ""
         }
+        
+    let all =
+        [
+            fantomas
+            argu
+            fcs_20240127
+        ]
 
 let getJsonTokenFromFile (path : string) (jpath : string) =
     let json = File.ReadAllText(path)

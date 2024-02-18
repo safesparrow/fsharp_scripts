@@ -64,7 +64,9 @@ type CheckerOptions =
       EnablePartialTypeChecking: bool
       ParallelReferenceResolution: bool }
 
-type IDE(slnPath: string, ?configuration: Configuration, ?checkerOptionsOverrides: CheckerOptions -> CheckerOptions) =
+type IDE(slnPath: string, ?configuration: Configuration,
+         ?checkerOptionsOverrides: CheckerOptions -> CheckerOptions,
+         ?msbuildProps: Map<string, string>) =
     let configuration = configuration |> Option.defaultValue Configuration.Debug
     let slnDir = DirectoryInfo(Path.GetDirectoryName(slnPath))
     let toolsPath = Init.init slnDir None
@@ -88,13 +90,19 @@ type IDE(slnPath: string, ?configuration: Configuration, ?checkerOptionsOverride
             enablePartialTypeChecking = checkerOptions.EnablePartialTypeChecking,
             useTransparentCompiler = checkerOptions.UseTransparentCompiler
         )
+        
+    let msbuildPropsStringCommandLineString =
+        msbuildProps
+        |> Option.defaultValue Map.empty
+        |> Seq.map (fun (KeyValue(k, v)) -> $"/p:{k}={v}")
+        |> fun items -> String.Join(" ", items)
 
     do subscribeToChecker checker
 
-    member x.RestoreSln() = Scripts.Build.restoreProject slnPath ""
+    member x.RestoreSln() = Build.restoreProject slnPath msbuildPropsStringCommandLineString
 
     member x.BuildSln() =
-        Scripts.Build.buildProject slnPath None ""
+        Build.buildProject slnPath None msbuildPropsStringCommandLineString
 
     member x.LoadProjects() =
         let ps = workspaceLoader.LoadSln(slnPath) |> Seq.toArray
