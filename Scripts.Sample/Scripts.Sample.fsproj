@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24101.1" />
+      <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24115.2" />
       <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
       <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0" />
     </ItemGroup>
