@@ -19,6 +19,7 @@
       <PackageReference Include="FSharp.Compiler.Service" Version="43.8.300-preview.24115.2" />
       <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
       <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0" />
+      <PackageReference Update="FSharp.Core" Version="8.0.300-beta.24115.2" />
     </ItemGroup>
 
 </Project>

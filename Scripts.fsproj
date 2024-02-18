@@ -38,6 +38,7 @@
         <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" ExcludeAssets="runtime" PrivateAssets="all">
           <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Update="FSharp.Core" Version="8.0.300-beta.24115.2" />
 <!--        <PackageReference Include="Microsoft.Build.Locator" Version="1.6.10" />-->
 <!--        <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.4.0" ExcludeAssets="runtime"  PrivateAssets="all"/>-->
 <!--        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.4.0" ExcludeAssets="runtime"  PrivateAssets="all" />-->
