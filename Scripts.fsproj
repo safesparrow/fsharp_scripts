@@ -18,6 +18,7 @@
         <Compile Include="Samples.fs" />
         <Compile Include="More.fs" />
         <Compile Include="Compiler.fs" />
+        <Compile Include="DeterminismTests.fs" />
         <Compile Include="IDE.fs" />
     </ItemGroup>
 

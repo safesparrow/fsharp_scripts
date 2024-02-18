@@ -1,16 +1,16 @@
-﻿module Scripts.Sample.Program
+﻿module Scripts.IDETests
 
 open System
 open System.Diagnostics
 open System.IO
-open Ionide.ProjInfo
 open OpenTelemetry
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
 open Scripts.Git
-open Scripts.More
 open Scripts.IDE
+open Scripts.Sample
 open Serilog
+open Argu
 
 let setupTelemetry () =
     Sdk
@@ -51,9 +51,7 @@ let testIDE (spec : Sample) (transparentCompiler: bool) (inParallel : bool) (par
     ide.RestoreSln()
     ide.LoadProjects()
     ide.CheckAllProjects(inParallel=inParallel)
-
-open Argu
-
+    
 type TCModes =
     | On
     | Off

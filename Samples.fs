@@ -4,11 +4,11 @@ open Scripts.Sample
 
 let fantomas =
     {
-        Name = "Samples.fantomas"
-        Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "Samples.fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
+        Name = "Fantomas"
+        Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "Fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
         PrepareScript = PrepareScript.Nothing
         MSBuildProps = Map.empty
-        MainSolution = "Samples.fantomas.sln"
+        MainSolution = "Fantomas.sln"
         SDKRequirementsDescription = "" 
     }
     

@@ -4,7 +4,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts", "Scripts.fsproj",
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.Test", "Scripts.Test\Scripts.Test.fsproj", "{BF8A3732-7DA0-4699-875B-151FC52F559D}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.Sample", "Scripts.Sample\Scripts.Sample.fsproj", "{55B86A45-5D2D-4A8C-9B5A-DE1F3A8D6807}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scripts.IDETests", "Scripts.IDETests\Scripts.IDETests.fsproj", "{55B86A45-5D2D-4A8C-9B5A-DE1F3A8D6807}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
