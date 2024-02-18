@@ -8,7 +8,7 @@ open Serilog
 open Utils
 
 let dotnetPath =
-    Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
+    null // Environment.GetEnvironmentVariable("FSHARP_SCRIPTS_DOTNET")
     |> Option.ofObj
     |> Option.defaultValue "dotnet"
 

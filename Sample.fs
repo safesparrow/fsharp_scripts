@@ -22,12 +22,13 @@ type CodebaseSpec =
 [<RequireQualifiedAccess>]
 type PrepareScript =
     | PowerShell of string
-    | JustBuild
+    | Nothing
 
 type Sample =
     {
         CodebaseSpec : CodebaseSpec
         PrepareScript : PrepareScript
+        MainSolution : string
     }
 
 type AllConfig =
@@ -77,6 +78,6 @@ module SamplePreparation =
                     Log.Information("Preparation finished. Marker file created: {markerPath}", markerPath)
                 ()
             ()
-        | PrepareScript.JustBuild ->
+        | PrepareScript.Nothing ->
             ()
         dir

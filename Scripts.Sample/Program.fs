@@ -30,11 +30,12 @@ let config = { CheckoutsConfig.CacheDir = Path.Combine(Scripts.Utils.repoDir, ".
 let activitySource = new ActivitySource("fsc")
 
 let testIDE (transparentCompiler : bool) =
+    let spec = argu
+    
     use trace = activitySource.StartActivity("testIDE", ActivityKind.Internal)
     trace.SetTag("transparentCompiler", transparentCompiler) |> ignore
-    let spec = fantomas
     let dir = SamplePreparation.prepare config spec
-    let slnPath = Path.Combine(dir, "Fantomas.sln")
+    let slnPath = Path.Combine(dir, spec.MainSolution)
     let ide = IDE(slnPath, checkerOptionsOverrides = fun opts -> { opts with UseTransparentCompiler = transparentCompiler })
     ide.RestoreSln()
     ide.LoadProjects()

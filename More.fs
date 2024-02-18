@@ -36,15 +36,24 @@ let binSearchArrayIndices<'a> (f : 'a -> bool) (queryItems : 'a[]) =
 module Samples =
     let fantomas =
         {
-            // Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "18f31541e983c9301e6a55ba6582817bc704cb6f")
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
-            PrepareScript = PrepareScript.JustBuild //  PrepareScript.PowerShell "dotnet build Fantomas.sln /m"
+            PrepareScript = PrepareScript.Nothing
+            MainSolution = "Fantomas.sln" 
         }
+        
+    let argu =
+        {
+            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "argu", "71625aec0b4b826ab2b4178f3ffa05d294d22840")
+            PrepareScript = PrepareScript.Nothing
+            MainSolution = "Argu.sln"
+        }
+    
     
     let fsharp_20240127 =
         {
             Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "9ae94bb9f96f07a416777852537bd0310e4764ab")
             PrepareScript = PrepareScript.PowerShell "dotnet build FSharp.Compiler.Service.sln /p:BUILDING_USING_DOTNET=true /m"
+            MainSolution = "FSharp.Compiler.Service.sln"
         }
 
 let getJsonTokenFromFile (path : string) (jpath : string) =
