@@ -13,9 +13,9 @@ open Scripts.Build
 let config = { CheckoutsConfig.CacheDir = Path.Combine(Scripts.Utils.repoDir, ".cache") }
 
 let TestFcsCompilationDeterminism (fscDll : string) =
-    let spec = fantomas
+    let spec = Samples.fantomas
     let dir = SamplePreparation.prepare config spec
-    let project = Path.Combine(dir, "src", "Fantomas", "Fantomas.fsproj")
+    let project = Path.Combine(dir, "src", "Samples.fantomas", "Samples.fantomas.fsproj")
     
     let binlogPath = Path.Combine(Environment.CurrentDirectory, "x.binlog")
     buildProject project (Some binlogPath) ""

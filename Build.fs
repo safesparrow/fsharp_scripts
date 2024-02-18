@@ -40,3 +40,9 @@ let rec buildProject (projectPath : string) (binlogOutputPath : string option) (
 let rec buildSingleProjectMinimalNoIncremental (projectPath : string) (binlogOutputPath : string option) (extraArgs : string) =
     let extraArgs = extraArgs + " --no-incremental --no-dependencies --no-restore"
     buildProject projectPath binlogOutputPath extraArgs
+
+let buildMSBuildPropsArg (msbuildProps: Map<string, string> option) =
+    msbuildProps
+    |> Option.defaultValue Map.empty
+    |> Seq.map (fun (KeyValue(k, v)) -> $"/p:{k}={v}")
+    |> fun items -> String.Join(" ", items)    

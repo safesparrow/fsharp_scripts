@@ -10,6 +10,7 @@ let setupLogging (verbose: bool) =
         LoggerConfiguration()
             .Enrich.FromLogContext()
             .Filter.ByExcluding(Matching.FromSource("MsBuild"))
+            .Filter.ByExcluding(Matching.FromSource("Ionide.ProjInfo.WorkspaceLoaderViaProjectGraph"))
             .WriteTo
             .Console(
                 outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} {step:j}: {Message:lj}{NewLine}{Exception}"

@@ -15,6 +15,7 @@
         <Compile Include="Sample.fs" />
         <Compile Include="DeterminismExtracts.fs" />
         <Content Include="nojaf.ps1" />
+        <Compile Include="Samples.fs" />
         <Compile Include="More.fs" />
         <Compile Include="Compiler.fs" />
         <Compile Include="IDE.fs" />

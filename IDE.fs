@@ -70,7 +70,21 @@ type IDE(slnPath: string, ?configuration: Configuration,
     let configuration = configuration |> Option.defaultValue Configuration.Debug
     let slnDir = DirectoryInfo(Path.GetDirectoryName(slnPath))
     let toolsPath = Init.init slnDir None
-    let globalProps = [ "Configuration", configuration.ToString() ]
+    
+    let msbuildPropsStringCommandLineString =
+        msbuildProps
+        |> Option.defaultValue Map.empty
+        |> Seq.map (fun (KeyValue(k, v)) -> $"/p:{k}={v}")
+        |> fun items -> String.Join(" ", items)
+    
+    let extraProps = [ "Configuration", configuration.ToString() ]
+    let globalProps =
+        msbuildProps
+        |> Option.defaultValue Map.empty
+        |> Seq.map (fun (KeyValue(k, v)) -> k, v)
+        |> Seq.toList
+        |> List.append extraProps
+    
     let workspaceLoader = WorkspaceLoaderViaProjectGraph.Create(toolsPath, globalProps)
     let mutable projects: Map<string, Project> = Map.empty
 
@@ -91,12 +105,6 @@ type IDE(slnPath: string, ?configuration: Configuration,
             useTransparentCompiler = checkerOptions.UseTransparentCompiler
         )
         
-    let msbuildPropsStringCommandLineString =
-        msbuildProps
-        |> Option.defaultValue Map.empty
-        |> Seq.map (fun (KeyValue(k, v)) -> $"/p:{k}={v}")
-        |> fun items -> String.Join(" ", items)
-
     do subscribeToChecker checker
 
     member x.RestoreSln() = Build.restoreProject slnPath msbuildPropsStringCommandLineString
@@ -112,10 +120,13 @@ type IDE(slnPath: string, ?configuration: Configuration,
             Array.zip ps fcsProjects
             |> Array.map (fun (raw, fcs) -> raw.ProjectFileName, { Project.Raw = raw; Project.FCS = fcs })
             |> Map.ofArray
+            
+        Log.Information($"Loaded {projects.Count} projects")
 
     member x.Projects = projects
 
-    member x.CheckAllProjectsInParallel() =
+    member x.CheckAllProjects(?inParallel : bool) =
+        let inParallel = inParallel |> Option.defaultValue false
         projects
         |> Seq.map (fun (KeyValue(n, p)) ->
             async {
@@ -123,7 +134,7 @@ type IDE(slnPath: string, ?configuration: Configuration,
                 return res
             })
         |> Seq.toArray
-        |> Async.Parallel
+        |> fun x -> if inParallel then Async.Parallel x else Async.Sequential x
         |> Async.StartAsTask
         |> fun t ->
             for projRes in t.Result do

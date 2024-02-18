@@ -32,45 +32,6 @@ let binSearchArrayIndices<'a> (f : 'a -> bool) (queryItems : 'a[]) =
     binSearchLowestTrueValue 0 (queryItems.Length-1) g
     |> Option.map (fun i -> queryItems[i])
 
-[<AutoOpen>]
-module Samples =
-    let fantomas =
-        {
-            Name = "fantomas"
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "fantomas", "de8ac507903bf545211eaa0efd88c2436fee1424")
-            PrepareScript = PrepareScript.Nothing
-            MSBuildProps = Map.empty
-            MainSolution = "Fantomas.sln"
-            SDKRequirementsDescription = "" 
-        }
-        
-    let argu =
-        {
-            Name = "Argu"
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "argu", "71625aec0b4b826ab2b4178f3ffa05d294d22840")
-            PrepareScript = PrepareScript.Nothing
-            MSBuildProps = Map.empty
-            MainSolution = "Argu.sln"
-            SDKRequirementsDescription = "6.0.402 with minor upgrades"
-        }
-    
-    let fcs_20240127 =
-        {
-            Name = "FCS"
-            Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("dotnet", "fsharp", "9ae94bb9f96f07a416777852537bd0310e4764ab")
-            PrepareScript = PrepareScript.Nothing
-            MSBuildProps = Map.empty |> Map.add "BUILDING_USING_DOTNET" "true"
-            MainSolution = "FSharp.Compiler.Service.sln"
-            SDKRequirementsDescription = ""
-        }
-        
-    let all =
-        [
-            fantomas
-            argu
-            fcs_20240127
-        ]
-
 let getJsonTokenFromFile (path : string) (jpath : string) =
     let json = File.ReadAllText(path)
     let o = JObject.Parse(json)
