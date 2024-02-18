@@ -64,6 +64,16 @@ let fake =
         MainSolution = "FAKE.sln"
         SDKRequirementsDescription = "6.0.101 with latestMinor upgrades"
     }
+    
+let paket =
+    {
+        Name = "Paket"
+        Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "Paket", "4954f9f2fc6f6494edf54674bf926d22c80fab49")
+        PrepareScript = PrepareScript.Nothing
+        MSBuildProps = Map.empty
+        MainSolution = "Paket.sln"
+        SDKRequirementsDescription = "8.0.101 with latestMinor upgrades"
+    }
         
 let all =
     [
@@ -73,4 +83,5 @@ let all =
         giraffe
         fsharpData
         fake
+        paket
     ]
