@@ -19,7 +19,7 @@ To list available samples, run:
 dotnet run -- --help
 ```
 
-The test checks out, restore, loads & type-checks a given solution and reports all the compiler diagnostics.
+The test checks out, restores, loads & type-checks a given solution and reports all the compiler diagnostics.
 
 # Contributing
 If you'd like to propose/make changes to the repository, please raise an issue or a Pull Request.
