@@ -32,6 +32,7 @@ type Sample =
         MainSolution : string
         MSBuildProps : Map<string, string>
         SDKRequirementsDescription : string
+        ExcludeProjects : string option
     }
 
 type AllConfig =

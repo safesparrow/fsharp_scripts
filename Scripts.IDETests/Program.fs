@@ -38,6 +38,7 @@ let testIDE (spec : Sample) (transparentCompiler: bool) (inParallel : bool) (par
 
     let ide =
         IDE(slnPath,
+            projectFilter = spec.ExcludeProjects,
             checkerOptionsOverrides = (
                 fun opts ->
                     {
@@ -50,7 +51,7 @@ let testIDE (spec : Sample) (transparentCompiler: bool) (inParallel : bool) (par
 
     ide.RestoreSln()
     ide.LoadProjects()
-    ide.CheckAllProjects(inParallel=inParallel)
+    ide.CheckAllFSharpProjects(inParallel=inParallel)
     
 type TCModes =
     | On

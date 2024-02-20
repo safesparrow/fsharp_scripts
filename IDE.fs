@@ -1,31 +1,49 @@
 module Scripts.IDE
 
 open System.IO
+open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis
+open FSharp.Compiler.Diagnostics
 open Ionide.ProjInfo.Types
 open Scripts.Compiler
 open System
 open Ionide.ProjInfo
 open Serilog
+open Serilog.Events
+
+type ProjectLanguage =
+    | FSharp
+    | CSharp
+
+let projectLanguage (projectFile : string) =
+    let extension = Path.GetExtension(projectFile)
+    match extension with
+    | ".fsproj" -> ProjectLanguage.FSharp
+    | ".csproj" -> ProjectLanguage.CSharp
+    | s -> failwith $"Unrecognised project extension '{extension}'"
 
 type Project =
     { Raw: ProjectOptions
-      FCS: FSharpProjectOptions }
+      FCS: FSharpProjectOptions option }
 
     member this.Name = this.Raw.ProjectFileName
     member this.ShortName = Path.GetFileNameWithoutExtension(this.Name)
+    member this.Language = projectLanguage this.Raw.ProjectFileName
 
 type FSharpProjectOptions with
 
     member x.ProjectDir = Path.GetDirectoryName(x.ProjectFileName)
+    member x.HasNoCSharpReferences =
+        x.ReferencedProjects
+        |> Array.forall (function | FSharpReferencedProject.FSharpReference _ -> true | _ -> false)
 
-let pathRelativeToProject (op: FSharpProjectOptions) (filename: string) =
+let pathRelativeToProjectOrSolution (op: FSharpProjectOptions) (filename: string) (solutionPath : string) =
     if Object.ReferenceEquals(null, op) then
-        filename
+        Path.GetRelativePath(solutionPath, filename)
     else
         Path.GetRelativePath(op.ProjectDir, filename)
 
-let private subscribeToChecker (checker: FSharpChecker) =
+let private subscribeToChecker (solutionPath : string) (checker: FSharpChecker) =
     checker.FileChecked.AddHandler(fun (sender: obj) (filename: string, op: FSharpProjectOptions) ->
         let name =
             (if Object.ReferenceEquals(null, op) then
@@ -34,7 +52,7 @@ let private subscribeToChecker (checker: FSharpChecker) =
                  op.ProjectFileName)
             |> Path.GetFileNameWithoutExtension
 
-        Log.Information("{project} | FileChecked {file}", name.PadRight(20), pathRelativeToProject op filename)
+        Log.Information("{project} | FileChecked {file}", name.PadRight(20), pathRelativeToProjectOrSolution op filename solutionPath)
         ())
 
     checker.FileParsed.AddHandler(fun (sender: obj) (filename: string, op: FSharpProjectOptions) ->
@@ -45,7 +63,7 @@ let private subscribeToChecker (checker: FSharpChecker) =
                  op.ProjectFileName)
             |> Path.GetFileNameWithoutExtension
 
-        Log.Information("{project} | FileParsed  {file}", name.PadRight(20), pathRelativeToProject op filename)
+        Log.Information("{project} | FileParsed  {file}", name.PadRight(20), pathRelativeToProjectOrSolution op filename solutionPath)
         ())
 
     checker.ProjectChecked.AddHandler(fun (sender: obj) (op: FSharpProjectOptions) ->
@@ -64,7 +82,7 @@ type CheckerOptions =
       EnablePartialTypeChecking: bool
       ParallelReferenceResolution: bool }
 
-type IDE(slnPath: string, ?configuration: Configuration,
+type IDE(slnPath: string, projectFilter: string option, ?configuration: Configuration,
          ?checkerOptionsOverrides: CheckerOptions -> CheckerOptions,
          ?msbuildProps: Map<string, string>) =
     let configuration = configuration |> Option.defaultValue Configuration.Debug
@@ -105,7 +123,7 @@ type IDE(slnPath: string, ?configuration: Configuration,
             useTransparentCompiler = checkerOptions.UseTransparentCompiler
         )
         
-    do subscribeToChecker checker
+    do subscribeToChecker slnDir.FullName checker
 
     member x.RestoreSln() = Build.restoreProject slnPath msbuildPropsStringCommandLineString
 
@@ -113,24 +131,53 @@ type IDE(slnPath: string, ?configuration: Configuration,
         Build.buildProject slnPath None msbuildPropsStringCommandLineString
 
     member x.LoadProjects() =
-        let ps = workspaceLoader.LoadSln(slnPath) |> Seq.toArray
-        let fcsProjects = FCS.mapManyOptions ps |> Seq.toArray
+        let unfilteredPs =
+            workspaceLoader.LoadSln(slnPath)
+            |> Seq.toArray
+        let ps =
+            unfilteredPs
+            |> fun ps ->
+                match projectFilter with
+                | Some filter -> ps |> Array.filter (fun p -> Regex.IsMatch(p.ProjectFileName, filter) = false)
+                | None -> ps
+        let fsharpProjects =
+            ps
+            |> Array.filter (fun p -> projectLanguage p.ProjectFileName = ProjectLanguage.FSharp)
+        let fcsProjects =
+            FCS.mapManyOptions ps
+            |> Seq.map (fun p -> p)
+            |> Seq.toArray
 
         projects <-
             Array.zip ps fcsProjects
-            |> Array.map (fun (raw, fcs) -> raw.ProjectFileName, { Project.Raw = raw; Project.FCS = fcs })
+            |> Array.map (fun (p, fp) ->
+                let fcs =
+                    match projectLanguage p.ProjectFileName with
+                    | ProjectLanguage.FSharp -> Some fp
+                    | _ -> None
+                p.ProjectFileName, { Project.Raw = p; Project.FCS = fcs }
+            )
             |> Map.ofArray
             
-        Log.Information($"Loaded {projects.Count} projects")
+        let projectsString =
+            projects
+            |> Map.toArray
+            |> Array.map fst
+            |> fun projectNames -> String.Join(Environment.NewLine, projectNames)
+        Log.Information($"Loaded {projects.Count} projects: {Environment.NewLine}{projectsString}")
 
     member x.Projects = projects
 
-    member x.CheckAllProjects(?inParallel : bool) =
+    member x.CheckAllFSharpProjects(?inParallel : bool) =
         let inParallel = inParallel |> Option.defaultValue false
         projects
-        |> Seq.map (fun (KeyValue(n, p)) ->
+        |> Map.toArray
+        |> Array.filter (fun (n, p) -> p.Language = ProjectLanguage.FSharp)
+        |> Seq.map (fun (n, p) ->
             async {
-                let res = checker.ParseAndCheckProject(p.FCS) |> Async.StartAsTask |> _.Result
+                Log.Information("ParseAndCheckProject start | {project}", Path.GetRelativePath(slnDir.FullName, p.Name))
+                let res = checker.ParseAndCheckProject(p.FCS.Value) |> Async.StartAsTask |> _.Result
+                Log.Information("ParseAndCheckProject end   | {project}", Path.GetRelativePath(slnDir.FullName, p.Name))
                 return res
             })
         |> Seq.toArray
@@ -139,9 +186,17 @@ type IDE(slnPath: string, ?configuration: Configuration,
         |> fun t ->
             for projRes in t.Result do
                 for d in projRes.Diagnostics do
-                    Log.Information(
-                        "Diagnostic | {project} | {filename} | {message}",
+                    let level =
+                        match d.Severity with
+                        | FSharpDiagnosticSeverity.Hidden -> LogEventLevel.Verbose
+                        | FSharpDiagnosticSeverity.Info -> LogEventLevel.Debug
+                        | FSharpDiagnosticSeverity.Warning -> LogEventLevel.Warning
+                        | FSharpDiagnosticSeverity.Error -> LogEventLevel.Error
+                        
+                    Log.Write(level,
+                        "Diagnostic | {project} | {filename}:{range} | {message}",
                         Path.GetFileName(projRes.ProjectContext.ProjectOptions.ProjectFileName),
-                        d.FileName,
+                        Path.GetRelativePath(slnDir.FullName, d.FileName),
+                        $"{d.Range.StartLine}-{d.Range.EndLine}",
                         d.Message
                     )

@@ -9,7 +9,8 @@ let fantomas =
         PrepareScript = PrepareScript.Nothing
         MSBuildProps = Map.empty
         MainSolution = "Fantomas.sln"
-        SDKRequirementsDescription = "" 
+        SDKRequirementsDescription = ""
+        ExcludeProjects = None 
     }
     
 let argu =
@@ -20,6 +21,7 @@ let argu =
         MSBuildProps = Map.empty
         MainSolution = "Argu.sln"
         SDKRequirementsDescription = "6.0.402 with minor upgrades"
+        ExcludeProjects = None
     }
 
 let fcs_20240127 =
@@ -30,6 +32,7 @@ let fcs_20240127 =
         MSBuildProps = Map.empty |> Map.add "BUILDING_USING_DOTNET" "true"
         MainSolution = "FSharp.Compiler.Service.sln"
         SDKRequirementsDescription = ""
+        ExcludeProjects = None
     }
     
 let giraffe =
@@ -40,19 +43,19 @@ let giraffe =
         MSBuildProps = Map.empty |> Map.add "TargetFramework" "net7.0" |> Map.add "TargetFrameworks" "net7.0"
         MainSolution = "Giraffe.sln"
         SDKRequirementsDescription = ""
+        ExcludeProjects = None
     }
-     
-let fsharpDataPsBuildScript =
-    "if ($IsWindows){ ./build.cmd -t Build; } Else { bash ./build.sh -t Build; }"
      
 let fsharpData =
     {
         Name = "FSharpData"
         Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "FSharp.Data", "8a6688f34abede0a80306e6c802601ef74edf473")
-        PrepareScript = PrepareScript.Nothing // PrepareScript.PowerShell fsharpDataPsBuildScript
+        PrepareScript = PrepareScript.Nothing
         MSBuildProps = Map.empty
         MainSolution = "FSharp.Data.sln"
         SDKRequirementsDescription = ""
+        // These require built type providers which don't work out-of-the-box
+        ExcludeProjects = Some "(FSharp\.Data\.Tests\.fsproj)|(FSharp\.Data\.Reference\.Tests\.fsproj)"
     }
     
 let fake =
@@ -63,6 +66,7 @@ let fake =
         MSBuildProps = Map.empty
         MainSolution = "FAKE.sln"
         SDKRequirementsDescription = "6.0.101 with latestMinor upgrades"
+        ExcludeProjects = None
     }
     
 let paket =
@@ -73,7 +77,20 @@ let paket =
         MSBuildProps = Map.empty
         MainSolution = "Paket.sln"
         SDKRequirementsDescription = "8.0.101 with latestMinor upgrades"
+        ExcludeProjects = None
     }
+    
+let fsHttp =
+    {
+        Name = "FsHttp"
+        Sample.CodebaseSpec = CodebaseSpec.MakeGithub ("fsprojects", "FsHttp", "96d1a90f153715023c4eb907f8361a4acaec78f0")
+        PrepareScript = PrepareScript.Nothing
+        MSBuildProps = Map.empty |> Map.add "TargetFramework" "net8.0" |> Map.add "TargetFrameworks" "net8.0"
+        MainSolution = "FsHttp.sln"
+        SDKRequirementsDescription = "8.0.0 with latestMinor upgrades"
+        ExcludeProjects = None
+    }
+    
         
 let all =
     [
@@ -84,4 +101,5 @@ let all =
         fsharpData
         fake
         paket
+        fsHttp
     ]
